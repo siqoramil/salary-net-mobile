@@ -1,15 +1,18 @@
 import { useEffect } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withSequence,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
-export type ToastType = 'error' | 'success' | 'info';
+export type ToastType = 'error' | 'success' | 'info' | 'warning';
 
 interface ToastProps {
   visible: boolean;
@@ -20,16 +23,11 @@ interface ToastProps {
   onDismiss: () => void;
 }
 
-const COLORS: Record<ToastType, { bg: string; border: string; icon: string }> = {
-  error: { bg: '#FFF2F2', border: '#FF3B30', icon: '✕' },
-  success: { bg: '#F0FFF4', border: '#007AFF', icon: '✓' },
-  info: { bg: '#F0F6FF', border: '#007AFF', icon: 'i' },
-};
-
-const DARK_COLORS: Record<ToastType, { bg: string; border: string }> = {
-  error: { bg: '#2C1010', border: '#FF3B30' },
-  success: { bg: '#0A1F10', border: '#007AFF' },
-  info: { bg: '#0A1520', border: '#007AFF' },
+const ICON_CLASSES: Record<ToastType, { bg: string; glyph: string }> = {
+  error: { bg: 'bg-[#FF3B30]', glyph: '!' },
+  success: { bg: 'bg-[#34C759]', glyph: '✓' },
+  warning: { bg: 'bg-[#FF9500]', glyph: '!' },
+  info: { bg: 'bg-[#007AFF]', glyph: 'i' },
 };
 
 export function Toast({
@@ -40,24 +38,39 @@ export function Toast({
   duration = 3500,
   onDismiss,
 }: ToastProps) {
-  const translateY = useSharedValue(-120);
+  const insets = useSafeAreaInsets();
+  const translateY = useSharedValue(-160);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    if (visible) {
-      translateY.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
-      opacity.value = withTiming(1, { duration: 300 });
-
-      // Auto dismiss
-      translateY.value = withDelay(
-        duration,
-        withTiming(-120, { duration: 300, easing: Easing.in(Easing.cubic) }),
-      );
-      opacity.value = withDelay(duration, withTiming(0, { duration: 250 }, () => {
-        runOnJS(onDismiss)();
-      }));
+    if (!visible) {
+      translateY.value = -160;
+      opacity.value = 0;
+      return;
     }
-  }, [visible, duration, onDismiss, translateY, opacity]);
+
+    translateY.value = withSequence(
+      withSpring(0, { damping: 18, stiffness: 160, mass: 0.9 }),
+      withDelay(
+        duration,
+        withTiming(-160, { duration: 280, easing: Easing.in(Easing.cubic) }),
+      ),
+    );
+
+    opacity.value = withSequence(
+      withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) }),
+      withDelay(
+        duration,
+        withTiming(
+          0,
+          { duration: 240, easing: Easing.in(Easing.quad) },
+          (finished) => {
+            if (finished) runOnJS(onDismiss)();
+          },
+        ),
+      ),
+    );
+  }, [visible, duration, onDismiss, translateY, opacity, title, message]);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -66,65 +79,68 @@ export function Toast({
 
   if (!visible) return null;
 
-  const c = COLORS[type];
+  const icon = ICON_CLASSES[type];
 
   return (
     <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          top: 60,
-          left: 16,
-          right: 16,
-          zIndex: 9999,
-        },
-        animStyle,
-      ]}
+      pointerEvents="box-none"
+      className="absolute left-0 right-0 z-[9999] items-center"
+      style={[{ top: insets.top + 8 }, animStyle]}
     >
-      <Pressable onPress={onDismiss}>
+      <Pressable
+        onPress={onDismiss}
+        className="mx-3 w-[94%] max-w-[440px] active:opacity-95"
+      >
         <View
-          className="dark:border-opacity-50"
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: c.bg,
-            borderRadius: 16,
-            borderLeftWidth: 4,
-            borderLeftColor: c.border,
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.12,
-            shadowRadius: 12,
-            elevation: 8,
-          }}
+          className="flex-row items-center rounded-[22px] bg-white/95 px-[14px] py-[12px] dark:bg-[#2C2C2E]/95"
+          style={
+            Platform.OS === 'ios'
+              ? {
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 12 },
+                  shadowOpacity: 0.18,
+                  shadowRadius: 28,
+                }
+              : { elevation: 14 }
+          }
         >
-          {/* Icon */}
+          {/* App-style icon badge */}
           <View
+            className={`h-[38px] w-[38px] items-center justify-center rounded-[10px] ${icon.bg}`}
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: c.border,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 4,
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>{c.icon}</Text>
+            <Text className="text-[20px] font-bold leading-[24px] text-white">
+              {icon.glyph}
+            </Text>
           </View>
 
-          {/* Text */}
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#000' }}>{title}</Text>
+          {/* Text block */}
+          <View className="ml-3 flex-1">
+            <View className="flex-row items-center justify-between">
+              <Text
+                className="flex-1 text-[15px] font-semibold text-black dark:text-white"
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
+              <Text className="ml-2 text-[12px] font-medium text-[#8E8E93] dark:text-[#8E8E93]">
+                now
+              </Text>
+            </View>
             {message ? (
-              <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>{message}</Text>
+              <Text
+                className="mt-[2px] text-[13px] leading-[17px] text-[#3C3C43]/80 dark:text-[#EBEBF5]/80"
+                numberOfLines={2}
+              >
+                {message}
+              </Text>
             ) : null}
           </View>
-
-          {/* Close */}
-          <Text style={{ fontSize: 18, color: '#8E8E93', marginLeft: 8 }}>×</Text>
         </View>
       </Pressable>
     </Animated.View>

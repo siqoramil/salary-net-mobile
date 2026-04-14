@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Image,
   Pressable,
@@ -13,7 +13,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withSequence,
   withTiming,
   interpolate,
   runOnJS,
@@ -28,20 +27,20 @@ import { formatTime, groupByDay } from '@/src/utils/format';
 import { MoneyText } from '@/src/components/ui/MoneyText';
 import type { Expense } from '@/src/types/expense';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
-import { AddExpenseSheet } from '@/src/components/expense/AddExpenseSheet';
 import { EditExpenseSheet } from '@/src/components/expense/EditExpenseSheet';
 import { UserAvatar } from '@/src/components/ui/UserAvatar';
 
 type Period = 'daily' | 'weekly' | 'monthly';
 
 const ACTION_WIDTH = 72;
+const SWIPE_FRICTION = 0.35;
+const SNAP_SPRING = { damping: 26, stiffness: 70, mass: 1.1 };
 
 export default function HomeScreen() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
   const [period, setPeriod] = useState<Period>('daily');
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
   const summaryQuery = useExpenseSummary(period);
@@ -177,66 +176,12 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* FAB */}
-      <AnimatedFab onPress={() => setSheetOpen(true)} />
-
-      <AddExpenseSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} />
       <EditExpenseSheet
         expense={editExpense}
         visible={!!editExpense}
         onClose={() => setEditExpense(null)}
       />
     </SafeAreaView>
-  );
-}
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-const FAB_SIZE = 56;
-
-function AnimatedFab({ onPress }: { onPress: () => void }) {
-  const scale = useSharedValue(0);
-
-  useEffect(() => {
-    scale.value = withSpring(1, { damping: 14, stiffness: 160 });
-  }, [scale]);
-
-  const fabStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePress = () => {
-    scale.value = withSequence(
-      withSpring(0.88, { damping: 15, stiffness: 400 }),
-      withSpring(1, { damping: 12, stiffness: 200 }),
-    );
-    onPress();
-  };
-
-  return (
-    <View className="absolute bottom-28 left-0 right-0 items-center">
-      <AnimatedPressable
-        onPress={handlePress}
-        style={[
-          {
-            height: FAB_SIZE,
-            width: FAB_SIZE,
-            borderRadius: FAB_SIZE / 2,
-            backgroundColor: '#007AFF',
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: '#007AFF',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.35,
-            shadowRadius: 10,
-            elevation: 8,
-          },
-          fabStyle,
-        ]}
-      >
-        <Text style={{ color: '#fff', fontSize: 28, fontWeight: '400' }}>+</Text>
-      </AnimatedPressable>
-    </View>
   );
 }
 
@@ -261,23 +206,20 @@ function SwipeableExpenseRow({
     .activeOffsetX([-15, 15])
     .failOffsetY([-10, 10])
     .onUpdate((e) => {
-      // Clamp: left max -ACTION_WIDTH, right max +ACTION_WIDTH
-      if (e.translationX < 0) {
-        translateX.value = Math.max(e.translationX, -ACTION_WIDTH);
+      const raw = e.translationX * SWIPE_FRICTION;
+      if (raw < 0) {
+        translateX.value = Math.max(raw, -ACTION_WIDTH);
       } else {
-        translateX.value = Math.min(e.translationX, ACTION_WIDTH);
+        translateX.value = Math.min(raw, ACTION_WIDTH);
       }
     })
-    .onEnd((e) => {
-      if (e.translationX < -ACTION_WIDTH / 2) {
-        // Swiped left enough → snap to show delete
-        translateX.value = withSpring(-ACTION_WIDTH, { damping: 20, stiffness: 200 });
-      } else if (e.translationX > ACTION_WIDTH / 2) {
-        // Swiped right enough → snap to show edit
-        translateX.value = withSpring(ACTION_WIDTH, { damping: 20, stiffness: 200 });
+    .onEnd(() => {
+      if (translateX.value < -ACTION_WIDTH / 2) {
+        translateX.value = withSpring(-ACTION_WIDTH, SNAP_SPRING);
+      } else if (translateX.value > ACTION_WIDTH / 2) {
+        translateX.value = withSpring(ACTION_WIDTH, SNAP_SPRING);
       } else {
-        // Snap back
-        translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+        translateX.value = withSpring(0, SNAP_SPRING);
       }
     });
 
@@ -296,13 +238,13 @@ function SwipeableExpenseRow({
   }));
 
   const handleDelete = () => {
-    translateX.value = withTiming(-400, { duration: 250 }, () => {
+    translateX.value = withTiming(-400, { duration: 450 }, () => {
       runOnJS(onDelete)();
     });
   };
 
   const handleEdit = () => {
-    translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+    translateX.value = withSpring(0, SNAP_SPRING);
     onEdit();
   };
 

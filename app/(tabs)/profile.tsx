@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -14,15 +11,16 @@ import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
+import { BottomSheet } from '@/src/components/ui/BottomSheet';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
-import { Toast, type ToastType } from '@/src/components/ui/Toast';
 import { UserAvatar } from '@/src/components/ui/UserAvatar';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useThemeStore, type ThemeMode } from '@/src/stores/themeStore';
 import { useLocaleStore, type Locale } from '@/src/stores/localeStore';
 import { usePinStore } from '@/src/stores/pinStore';
+import { useUIStore } from '@/src/stores/uiStore';
 import { authApi } from '@/src/services/auth.service';
 import { api } from '@/src/services/api';
 import { uploadApi } from '@/src/services/upload.service';
@@ -42,10 +40,11 @@ export default function ProfileScreen() {
   const locale = useLocaleStore((s) => s.locale);
   const setLocale = useLocaleStore((s) => s.setLocale);
   const { hasPin, clearPin } = usePinStore();
+  const showToast = useUIStore((s) => s.showToast);
 
   const [passwordModal, setPasswordModal] = useState(false);
+  const [profileModal, setProfileModal] = useState(false);
   const [pinModal, setPinModal] = useState(false);
-  const [toast, setToast] = useState({ visible: false, type: 'success' as ToastType, title: '', message: '' });
 
   const onLogout = () => {
     Alert.alert(t('profile.signOutTitle'), t('profile.signOutConfirm'), [
@@ -67,14 +66,19 @@ export default function ProfileScreen() {
   const pickAvatar = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(t('common.permissionDenied'), t('common.allowPhotoAccess'));
+      showToast({
+        type: 'warning',
+        title: t('common.permissionDenied'),
+        message: t('common.allowPhotoAccess'),
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      quality: 0.5,
+      exif: false,
     });
     if (result.canceled || !result.assets[0]) return;
 
@@ -83,9 +87,17 @@ export default function ProfileScreen() {
       const url = await uploadApi.uploadReceipt(result.assets[0].uri);
       await api.patch('/users/me', { avatarUrl: url });
       updateUser({ avatarUrl: url });
-      setToast({ visible: true, type: 'success', title: t('common.success'), message: t('profile.avatarUpdated') });
+      showToast({
+        type: 'success',
+        title: t('common.success'),
+        message: t('profile.avatarUpdated'),
+      });
     } catch {
-      Alert.alert(t('common.error'), t('profile.avatarFailed'));
+      showToast({
+        type: 'error',
+        title: t('common.error'),
+        message: t('profile.avatarFailed'),
+      });
     } finally {
       setUploadingAvatar(false);
     }
@@ -99,7 +111,11 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: () => {
           clearPin();
-          setToast({ visible: true, type: 'success', title: t('common.success'), message: t('profile.pinResetDone') });
+          showToast({
+            type: 'success',
+            title: t('common.success'),
+            message: t('profile.pinResetDone'),
+          });
         },
       },
     ]);
@@ -107,7 +123,6 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F2F7] dark:bg-black">
-      <Toast visible={toast.visible} type={toast.type} title={toast.title} message={toast.message} onDismiss={() => setToast((v) => ({ ...v, visible: false }))} />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Avatar */}
@@ -128,6 +143,23 @@ export default function ProfileScreen() {
             {user?.fullName}
           </Text>
           <Text className="text-[14px] text-[#8E8E93]">{user?.email}</Text>
+        </View>
+
+        {/* Account */}
+        <Text className="mx-5 mt-8 mb-1 text-[13px] uppercase text-[#8E8E93]">
+          {t('profile.account')}
+        </Text>
+        <View className="mx-5 overflow-hidden rounded-[14px] bg-white dark:bg-[#1C1C1E]">
+          <Pressable
+            onPress={() => setProfileModal(true)}
+            className="flex-row items-center justify-between px-4 py-3.5 active:opacity-70"
+          >
+            <View className="flex-row items-center" style={{ gap: 10 }}>
+              <Text className="text-[18px]">👤</Text>
+              <Text className="text-[15px] text-black dark:text-white">{t('profile.editProfile')}</Text>
+            </View>
+            <Text className="text-[16px] text-[#8E8E93]">›</Text>
+          </Pressable>
         </View>
 
         {/* Preferences */}
@@ -236,7 +268,28 @@ export default function ProfileScreen() {
         onClose={() => setPasswordModal(false)}
         onSuccess={() => {
           setPasswordModal(false);
-          setToast({ visible: true, type: 'success', title: t('common.success'), message: t('profile.passwordChanged') });
+          showToast({
+            type: 'success',
+            title: t('common.success'),
+            message: t('profile.passwordChanged'),
+          });
+        }}
+      />
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        visible={profileModal}
+        initialName={user?.fullName ?? ''}
+        initialEmail={user?.email ?? ''}
+        onClose={() => setProfileModal(false)}
+        onSuccess={(updated) => {
+          updateUser(updated);
+          setProfileModal(false);
+          showToast({
+            type: 'success',
+            title: t('common.success'),
+            message: t('profile.profileUpdated'),
+          });
         }}
       />
     </SafeAreaView>
@@ -286,53 +339,216 @@ function ChangePasswordModal({
   const canSubmit = current.length >= 1 && isValidNew && newPw === confirm;
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable className="flex-1 bg-black/40" onPress={onClose}>
-        <View className="mt-auto" />
-      </Pressable>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="absolute bottom-0 left-0 right-0"
-      >
-        <View className="rounded-t-[24px] bg-white dark:bg-[#1C1C1E] p-5 pb-8">
-          <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+    <BottomSheet visible={visible} onClose={onClose}>
+      <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+      <Text className="text-center text-[20px] font-bold text-black dark:text-white">
+        {t('profile.changePassword')}
+      </Text>
+
+      <View className="mt-4">
+        <Input
+          label={t('profile.currentPassword')}
+          value={current}
+          onChangeText={setCurrent}
+          isPassword
+          placeholder="••••••••"
+        />
+        <Input
+          label={t('profile.newPassword')}
+          value={newPw}
+          onChangeText={setNewPw}
+          isPassword
+          placeholder={t('auth.placeholderPassword')}
+          error={
+            newPw.length > 0 && !isValidNew
+              ? newPw.length < 8
+                ? t('auth.passwordTooShort')
+                : !/[A-Z]/.test(newPw)
+                  ? t('auth.passwordNeedsUppercase')
+                  : !/[0-9]/.test(newPw)
+                    ? t('auth.passwordNeedsNumber')
+                    : t('auth.passwordNeedsSpecial')
+              : undefined
+          }
+        />
+        <Input
+          label={t('auth.confirmPassword')}
+          value={confirm}
+          onChangeText={setConfirm}
+          isPassword
+          placeholder={t('auth.placeholderConfirmPassword')}
+          error={confirm.length > 0 && confirm !== newPw ? t('auth.passwordsDontMatch') : undefined}
+        />
+        {error ? (
+          <Text className="mb-2 text-center text-[13px] text-[#FF3B30]">{error}</Text>
+        ) : null}
+      </View>
+
+      <View className="mt-2 flex-row gap-3">
+        <Button title={t('common.cancel')} variant="secondary" className="flex-1" onPress={onClose} />
+        <Button
+          title={t('common.save')}
+          className="flex-1"
+          loading={mutation.isPending}
+          disabled={!canSubmit}
+          onPress={() => mutation.mutate()}
+        />
+      </View>
+    </BottomSheet>
+  );
+}
+
+function EditProfileModal({
+  visible,
+  initialName,
+  initialEmail,
+  onClose,
+  onSuccess,
+}: {
+  visible: boolean;
+  initialName: string;
+  initialEmail: string;
+  onClose: () => void;
+  onSuccess: (updated: { fullName: string; email: string; emailVerified: boolean }) => void;
+}) {
+  const { t } = useTranslation();
+  const [step, setStep] = useState<'form' | 'verify'>('form');
+  const [fullName, setFullName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+
+  const reset = () => {
+    setStep('form');
+    setFullName(initialName);
+    setEmail(initialEmail);
+    setPendingEmail('');
+    setCode('');
+    setError('');
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const nameChanged = fullName.trim() !== initialName;
+      const emailChanged = email.trim().toLowerCase() !== initialEmail.toLowerCase();
+
+      let updatedUser: { fullName: string; email: string; emailVerified: boolean } | null = null;
+
+      if (nameChanged) {
+        const { data } = await api.patch('/users/me', { fullName: fullName.trim() });
+        updatedUser = data;
+      }
+
+      if (emailChanged) {
+        const newEmail = email.trim().toLowerCase();
+        await api.post('/users/me/email/request-change', { newEmail });
+        return { needsVerification: true as const, newEmail, updatedUser };
+      }
+
+      return { needsVerification: false as const, updatedUser };
+    },
+    onSuccess: (result) => {
+      setError('');
+      if (result.needsVerification) {
+        if (result.updatedUser) {
+          onSuccess({
+            fullName: result.updatedUser.fullName,
+            email: result.updatedUser.email,
+            emailVerified: result.updatedUser.emailVerified,
+          });
+        }
+        setPendingEmail(result.newEmail);
+        setCode('');
+        setStep('verify');
+      } else {
+        if (result.updatedUser) {
+          onSuccess({
+            fullName: result.updatedUser.fullName,
+            email: result.updatedUser.email,
+            emailVerified: result.updatedUser.emailVerified,
+          });
+        } else {
+          handleClose();
+        }
+      }
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post('/users/me/email/confirm-change', { code: code.trim() });
+      return data as { fullName: string; email: string; emailVerified: boolean };
+    },
+    onSuccess: (data) => {
+      setError('');
+      onSuccess({
+        fullName: data.fullName,
+        email: data.email,
+        emailVerified: data.emailVerified,
+      });
+      reset();
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/users/me/email/request-change', { newEmail: pendingEmail });
+    },
+    onSuccess: () => {
+      setError('');
+      setCode('');
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const nameValid = fullName.trim().length >= 2;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const changed =
+    fullName.trim() !== initialName || email.trim().toLowerCase() !== initialEmail.toLowerCase();
+  const canSave = nameValid && emailValid && changed && !saveMutation.isPending;
+  const canVerify = code.trim().length === 6 && !verifyMutation.isPending;
+
+  return (
+    <BottomSheet visible={visible} onClose={handleClose}>
+      <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+
+      {step === 'form' ? (
+        <>
           <Text className="text-center text-[20px] font-bold text-black dark:text-white">
-            {t('profile.changePassword')}
+            {t('profile.editProfile')}
           </Text>
 
           <View className="mt-4">
             <Input
-              label={t('profile.currentPassword')}
-              value={current}
-              onChangeText={setCurrent}
-              isPassword
-              placeholder="••••••••"
+              label={t('auth.fullName')}
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder={t('auth.placeholderName')}
+              autoCapitalize="words"
+              error={fullName.length > 0 && !nameValid ? t('auth.nameTooShort') : undefined}
             />
             <Input
-              label={t('profile.newPassword')}
-              value={newPw}
-              onChangeText={setNewPw}
-              isPassword
-              placeholder={t('auth.placeholderPassword')}
-              error={
-                newPw.length > 0 && !isValidNew
-                  ? newPw.length < 8
-                    ? t('auth.passwordTooShort')
-                    : !/[A-Z]/.test(newPw)
-                      ? t('auth.passwordNeedsUppercase')
-                      : !/[0-9]/.test(newPw)
-                        ? t('auth.passwordNeedsNumber')
-                        : t('auth.passwordNeedsSpecial')
-                  : undefined
-              }
-            />
-            <Input
-              label={t('auth.confirmPassword')}
-              value={confirm}
-              onChangeText={setConfirm}
-              isPassword
-              placeholder={t('auth.placeholderConfirmPassword')}
-              error={confirm.length > 0 && confirm !== newPw ? t('auth.passwordsDontMatch') : undefined}
+              label={t('auth.email')}
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t('auth.placeholderEmail')}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              error={email.length > 0 && !emailValid ? t('auth.invalidEmail') : undefined}
             />
             {error ? (
               <Text className="mb-2 text-center text-[13px] text-[#FF3B30]">{error}</Text>
@@ -340,17 +556,66 @@ function ChangePasswordModal({
           </View>
 
           <View className="mt-2 flex-row gap-3">
-            <Button title={t('common.cancel')} variant="secondary" className="flex-1" onPress={onClose} />
+            <Button title={t('common.cancel')} variant="secondary" className="flex-1" onPress={handleClose} />
             <Button
               title={t('common.save')}
               className="flex-1"
-              loading={mutation.isPending}
-              disabled={!canSubmit}
-              onPress={() => mutation.mutate()}
+              loading={saveMutation.isPending}
+              disabled={!canSave}
+              onPress={() => saveMutation.mutate()}
             />
           </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        </>
+      ) : (
+        <>
+          <Text className="text-center text-[20px] font-bold text-black dark:text-white">
+            {t('profile.verifyEmailTitle')}
+          </Text>
+          <Text className="mt-2 text-center text-[13px] leading-[18px] text-[#8E8E93]">
+            {t('profile.verifyEmailDesc', { email: pendingEmail })}
+          </Text>
+
+          <View className="mt-4">
+            <Input
+              label={t('profile.verificationCode')}
+              value={code}
+              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
+              placeholder="123456"
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+            {error ? (
+              <Text className="mb-2 text-center text-[13px] text-[#FF3B30]">{error}</Text>
+            ) : null}
+
+            <Pressable
+              onPress={() => resendMutation.mutate()}
+              disabled={resendMutation.isPending}
+              className="mt-1 items-center py-2 active:opacity-60"
+            >
+              <Text className="text-[13px] font-semibold text-[#007AFF]">
+                {resendMutation.isPending ? t('profile.sending') : t('profile.resendCode')}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="mt-2 flex-row gap-3">
+            <Button
+              title={t('common.cancel')}
+              variant="secondary"
+              className="flex-1"
+              onPress={handleClose}
+            />
+            <Button
+              title={t('profile.verify')}
+              className="flex-1"
+              loading={verifyMutation.isPending}
+              disabled={!canVerify}
+              onPress={() => verifyMutation.mutate()}
+            />
+          </View>
+        </>
+      )}
+    </BottomSheet>
   );
 }

@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -15,9 +11,11 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 
 import { Button } from '../ui/Button';
+import { BottomSheet } from '../ui/BottomSheet';
 import { DateTimePicker } from '../ui/DateTimePicker';
 import { CURRENCIES, EXPENSE_CATEGORIES } from '../../constants/categories';
 import { useUpdateExpense } from '../../hooks/useExpenses';
+import { useUIStore } from '../../stores/uiStore';
 import { uploadApi } from '../../services/upload.service';
 import { formatAmountInput } from '../../utils/format';
 import type { Currency } from '../../types/auth';
@@ -31,6 +29,7 @@ interface Props {
 
 export function EditExpenseSheet({ expense, visible, onClose }: Props) {
   const { t } = useTranslation();
+  const showToast = useUIStore((s) => s.showToast);
 
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('UZS');
@@ -59,7 +58,11 @@ export function EditExpenseSheet({ expense, visible, onClose }: Props) {
   const pickImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(t('common.permissionDenied'), t('common.allowPhotoAccess'));
+      showToast({
+        type: 'warning',
+        title: t('common.permissionDenied'),
+        message: t('common.allowPhotoAccess'),
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -76,7 +79,11 @@ export function EditExpenseSheet({ expense, visible, onClose }: Props) {
     if (!expense) return;
     const num = Number(amount.replace(/[^0-9.]/g, ''));
     if (!num || num <= 0) {
-      Alert.alert(t('common.error'), t('addExpense.enterValidAmount'));
+      showToast({
+        type: 'error',
+        title: t('common.error'),
+        message: t('addExpense.enterValidAmount'),
+      });
       return;
     }
 
@@ -86,7 +93,11 @@ export function EditExpenseSheet({ expense, visible, onClose }: Props) {
         setUploadingReceipt(true);
         finalReceiptUrl = await uploadApi.uploadReceipt(receiptUri);
       } catch {
-        Alert.alert(t('addExpense.uploadFailed'), t('addExpense.uploadFailedDesc'));
+        showToast({
+          type: 'error',
+          title: t('addExpense.uploadFailed'),
+          message: t('addExpense.uploadFailedDesc'),
+        });
         return;
       } finally {
         setUploadingReceipt(false);
@@ -111,26 +122,24 @@ export function EditExpenseSheet({ expense, visible, onClose }: Props) {
           const msg =
             (e as { response?: { data?: { message?: string } } }).response?.data?.message ??
             t('addExpense.saveFailed');
-          Alert.alert(t('common.error'), msg);
+          showToast({ type: 'error', title: t('common.error'), message: msg });
         },
       },
     );
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable className="flex-1 bg-black/40" onPress={onClose}>
-        <View className="mt-auto" />
-      </Pressable>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="absolute bottom-0 left-0 right-0"
-      >
-        <View className="rounded-t-[24px] bg-white dark:bg-[#1C1C1E] p-5 pb-8">
-          <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
-          <Text className="text-center text-[20px] font-bold text-black dark:text-white">{t('common.edit')}</Text>
+    <>
+      <BottomSheet visible={visible} onClose={onClose}>
+        <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+        <Text className="text-center text-[20px] font-bold text-black dark:text-white">{t('common.edit')}</Text>
 
-          <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 480 }}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 420 }}
+          >
             {/* Amount */}
             <Text className="mt-4 text-[13px] font-medium text-[#3C3C43] dark:text-[#EBEBF5]">{t('addExpense.amount')}</Text>
             <View className="mt-1 flex-row items-center rounded-[12px] bg-[#F2F2F7] dark:bg-[#2C2C2E] px-4 h-12">
@@ -263,8 +272,7 @@ export function EditExpenseSheet({ expense, visible, onClose }: Props) {
               onPress={submit}
             />
           </View>
-        </View>
-      </KeyboardAvoidingView>
+      </BottomSheet>
 
       <DateTimePicker
         visible={calendarOpen}
@@ -274,6 +282,6 @@ export function EditExpenseSheet({ expense, visible, onClose }: Props) {
         confirmLabel={t('common.confirm')}
         cancelLabel={t('common.cancel')}
       />
-    </Modal>
+    </>
   );
 }

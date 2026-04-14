@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,19 +7,19 @@ import { useMutation } from '@tanstack/react-query';
 
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
-import { Toast, type ToastType } from '../../src/components/ui/Toast';
 import { authApi } from '../../src/services/auth.service';
+import { useUIStore } from '../../src/stores/uiStore';
 
 export default function ForgotPassword() {
   const { t } = useTranslation();
   const router = useRouter();
   const { resetToken } = useLocalSearchParams<{ resetToken?: string }>();
+  const showToast = useUIStore((s) => s.showToast);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [touched, setTouched] = useState({ email: false, password: false, confirm: false });
-  const [toast, setToast] = useState({ visible: false, type: 'error' as ToastType, title: '', message: '' });
 
   const emailError =
     touched.email && email.length > 0 && (!email.includes('@') || !email.includes('.'))
@@ -39,15 +39,13 @@ export default function ForgotPassword() {
   const requestMutation = useMutation({
     mutationFn: () => authApi.forgotPassword(email.trim().toLowerCase()),
     onSuccess: () =>
-      setToast({
-        visible: true,
+      showToast({
         type: 'success',
         title: t('auth.checkEmail'),
         message: t('auth.checkEmailDesc', { email: email.trim() }),
       }),
     onError: (e: { response?: { data?: { message?: string } } }) =>
-      setToast({
-        visible: true,
+      showToast({
         type: 'error',
         title: t('common.error'),
         message: e.response?.data?.message ?? t('auth.requestFailed'),
@@ -57,8 +55,7 @@ export default function ForgotPassword() {
   const resetMutation = useMutation({
     mutationFn: () => authApi.resetPassword(resetToken!, password, confirm),
     onSuccess: () => {
-      setToast({
-        visible: true,
+      showToast({
         type: 'success',
         title: t('common.success'),
         message: t('auth.passwordUpdated'),
@@ -66,26 +63,16 @@ export default function ForgotPassword() {
       setTimeout(() => router.replace('/(auth)/sign-in'), 2000);
     },
     onError: (e: { response?: { data?: { message?: string } } }) =>
-      setToast({
-        visible: true,
+      showToast({
         type: 'error',
         title: t('common.error'),
         message: e.response?.data?.message ?? t('auth.resetFailed'),
       }),
   });
 
-  const dismissToast = useCallback(() => setToast((v) => ({ ...v, visible: false })), []);
-
   if (resetToken) {
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-black">
-        <Toast
-          visible={toast.visible}
-          type={toast.type}
-          title={toast.title}
-          message={toast.message}
-          onDismiss={dismissToast}
-        />
         <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
           <Text className="mt-6 text-[28px] font-bold text-black dark:text-white">{t('auth.newPassword')}</Text>
           <View className="mt-6">
@@ -122,13 +109,6 @@ export default function ForgotPassword() {
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-black">
-      <Toast
-        visible={toast.visible}
-        type={toast.type}
-        title={toast.title}
-        message={toast.message}
-        onDismiss={dismissToast}
-      />
       <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
         <Text className="mt-6 text-[28px] font-bold text-black dark:text-white">{t('auth.forgotPassword')}</Text>
         <Text className="mt-2 text-[15px] text-[#8E8E93]">

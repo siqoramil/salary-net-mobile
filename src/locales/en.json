@@ -157,7 +157,17 @@
     "resetPinDesc": "You will need to set a new PIN next time you open the app.",
     "pinResetDone": "PIN has been reset",
     "avatarUpdated": "Profile photo updated",
-    "avatarFailed": "Failed to upload photo"
+    "avatarFailed": "Failed to upload photo",
+    "account": "Account",
+    "editProfile": "Edit profile",
+    "profileUpdated": "Profile updated",
+    "verifyEmailTitle": "Verify your new email",
+    "verifyEmailDesc": "We sent a 6-digit code to {{email}}. Enter it below to confirm the change.",
+    "verificationCode": "Verification code",
+    "verify": "Verify",
+    "resendCode": "Resend code",
+    "sending": "Sending…",
+    "emailChangeConfirmed": "Email updated"
   },
   "pin": {
     "createTitle": "Create PIN code",

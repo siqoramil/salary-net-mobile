@@ -22,6 +22,7 @@ import { useThemeStore } from '../src/stores/themeStore';
 import { useLocaleStore } from '../src/stores/localeStore';
 import { PinGate } from '../src/components/PinGate';
 import { LoadingSpinner } from '../src/components/ui/LoadingSpinner';
+import { ToastHost } from '../src/components/ui/ToastHost';
 import { usePinStore } from '../src/stores/pinStore';
 import { hydrateStorage, storage, StorageKeys } from '../src/lib/storage';
 
@@ -68,6 +69,7 @@ function RootLayoutNav({ resolved }: { resolved: 'light' | 'dark' }) {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
+      <ToastHost />
       <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
