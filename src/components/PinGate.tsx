@@ -202,24 +202,24 @@ export function PinGate({ children }: { children: React.ReactNode }) {
       <Animated.View style={[{ flex: 1 }, fadeStyle]}>
 
         {/* ── Top: logo + title + dots ── */}
-        <View style={{ alignItems: 'center', paddingTop: 60 }}>
+        <View style={{ alignItems: 'center', paddingTop: 40 }}>
           <Image
             source={require('../../assets/images/icon.png')}
             style={{ width: 200, height: 200, borderRadius: 42 }}
             resizeMode="contain"
           />
-          <Text style={{ marginTop: 24, fontSize: 22, fontWeight: '700', color: textColor, letterSpacing: -0.2 }}>
+          <Text style={{ marginTop: 12, fontSize: 22, fontWeight: '700', color: textColor, letterSpacing: -0.2 }}>
             {title}
           </Text>
-          <Text style={{ marginTop: 6, fontSize: 14, color: '#8E8E93', opacity: subtitle ? 1 : 0 }}>
+          <Text style={{ marginTop: 4, fontSize: 14, color: '#8E8E93', opacity: subtitle ? 1 : 0 }}>
             {subtitle ?? ' '}
           </Text>
-          <Animated.View style={[{ flexDirection: 'row', marginTop: 24 }, shakeStyle]}>
+          <Animated.View style={[{ flexDirection: 'row', marginTop: 12 }, shakeStyle]}>
             {Array.from({ length: PIN_LENGTH }).map((_, i) => (
               <PinDot key={i} filled={i < digits.length} isDark={isDark} />
             ))}
           </Animated.View>
-          <View style={{ height: 22, justifyContent: 'center', marginTop: 8 }}>
+          <View style={{ height: 20, justifyContent: 'center', marginTop: 6 }}>
             {error ? <Text style={{ fontSize: 13, color: '#FF3B30' }}>{error}</Text> : null}
           </View>
         </View>
