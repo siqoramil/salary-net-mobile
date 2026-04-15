@@ -37,19 +37,36 @@ const ACTION_WIDTH = 82;
 const SWIPE_FRICTION = 0.35;
 const SNAP_SPRING = { damping: 26, stiffness: 70, mass: 1.1 };
 
+const INITIAL_VISIBLE = 10;
+const STEP = 10;
+
 export default function HomeScreen() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
   const [period, setPeriod] = useState<Period>('daily');
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
 
   const summaryQuery = useExpenseSummary(period);
   const listQuery = useExpenses({ limit: 30 });
   const deleteMutation = useDeleteExpense();
 
   const flatItems = listQuery.data?.pages.flatMap((p) => p.items) ?? [];
-  const groups = groupByDay(flatItems, t('home.today'), t('home.yesterday'));
+  const visibleItems = flatItems.slice(0, visibleCount);
+  const groups = groupByDay(visibleItems, t('home.today'), t('home.yesterday'));
+  const hasMoreLoaded = flatItems.length > visibleCount;
+  const canLoadMore = hasMoreLoaded || (listQuery.hasNextPage ?? false);
+
+  const onShowMore = () => {
+    if (flatItems.length > visibleCount) {
+      setVisibleCount((c) => c + STEP);
+      return;
+    }
+    if (listQuery.hasNextPage && !listQuery.isFetchingNextPage) {
+      void listQuery.fetchNextPage().then(() => setVisibleCount((c) => c + STEP));
+    }
+  };
 
   const totals = summaryQuery.data?.byCurrency ?? [];
   const primary = totals[0];
@@ -142,7 +159,12 @@ export default function HomeScreen() {
             {t('home.recentExpenses') ?? 'Recent'}
           </Text>
           <Text className="text-[13px] text-[#8E8E93]">
-            {flatItems.length > 0 ? `${flatItems.length} ${t('common.items')}` : ''}
+            {flatItems.length > 0
+              ? t('home.showingCount', {
+                  shown: Math.min(visibleCount, flatItems.length),
+                  total: flatItems.length,
+                })
+              : ''}
           </Text>
         </View>
 
@@ -162,24 +184,44 @@ export default function HomeScreen() {
             </Text>
           </View>
         ) : (
-          groups.map((group) => (
-            <View key={group.day} className="mt-4 px-5">
-              <Text className="mb-2 ml-1 text-[13px] font-semibold uppercase tracking-wider text-[#8E8E93]">
-                {group.label}
-              </Text>
-              <View className="overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
-                {group.items.map((expense, idx) => (
-                  <SwipeableExpenseRow
-                    key={expense.id}
-                    expense={expense}
-                    isLast={idx === group.items.length - 1}
-                    onDelete={() => deleteMutation.mutate(expense.id)}
-                    onEdit={() => setEditExpense(expense)}
-                  />
-                ))}
+          <>
+            {groups.map((group) => (
+              <View key={group.day} className="mt-4 px-5">
+                <Text className="mb-2 ml-1 text-[13px] font-semibold uppercase tracking-wider text-[#8E8E93]">
+                  {group.label}
+                </Text>
+                <View className="overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
+                  {group.items.map((expense, idx) => (
+                    <SwipeableExpenseRow
+                      key={expense.id}
+                      expense={expense}
+                      isLast={idx === group.items.length - 1}
+                      onDelete={() => deleteMutation.mutate(expense.id)}
+                      onEdit={() => setEditExpense(expense)}
+                    />
+                  ))}
+                </View>
               </View>
-            </View>
-          ))
+            ))}
+
+            {canLoadMore ? (
+              <View className="mt-4 px-5">
+                <Pressable
+                  onPress={onShowMore}
+                  disabled={listQuery.isFetchingNextPage}
+                  className="items-center rounded-[14px] bg-white py-[14px] active:opacity-70 dark:bg-[#1C1C1E]"
+                >
+                  {listQuery.isFetchingNextPage ? (
+                    <LoadingSpinner />
+                  ) : (
+                    <Text className="text-[15px] font-semibold text-[#007AFF]">
+                      {t('home.showMore')}
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+            ) : null}
+          </>
         )}
       </ScrollView>
 

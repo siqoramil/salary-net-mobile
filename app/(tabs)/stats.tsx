@@ -11,7 +11,6 @@ import {
 } from '@/src/hooks/useExpenses';
 import { CATEGORY_BY_ID } from '@/src/constants/categories';
 import { MoneyText } from '@/src/components/ui/MoneyText';
-import { DonutChart } from '@/src/components/charts/DonutChart';
 import { BarChart } from '@/src/components/charts/BarChart';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { DateTimePicker } from '@/src/components/ui/DateTimePicker';
@@ -149,6 +148,8 @@ export default function StatsScreen() {
   const [period, setPeriod] = useState<Period>('monthly');
   const [pickedDate, setPickedDate] = useState<Date | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [expandedTotal, setExpandedTotal] = useState(false);
+  const [expandedAvg, setExpandedAvg] = useState(false);
 
   // When a specific date is picked, override period range with that day.
   const range = useMemo(() => {
@@ -245,51 +246,10 @@ export default function StatsScreen() {
                 : formatDateRange(range.from, range.to, period, i18n.language)}
             </Text>
           </View>
-          <Pressable
+          <CalendarButton
+            picked={pickedDate}
             onPress={() => setCalendarOpen(true)}
-            className="ml-3 mt-1 active:opacity-70"
-          >
-            <View
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 14,
-                backgroundColor: pickedDate ? '#007AFF' : '#FFFFFF',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: pickedDate ? '#007AFF' : '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: pickedDate ? 0.35 : 0.08,
-                shadowRadius: 12,
-                elevation: 6,
-                borderWidth: pickedDate ? 0 : 1,
-                borderColor: 'rgba(0,0,0,0.05)',
-              }}
-            >
-              <Text style={{ fontSize: 22 }}>📅</Text>
-              {pickedDate ? (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -4,
-                    right: -4,
-                    width: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    backgroundColor: '#FF3B30',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 2,
-                    borderColor: '#F2F2F7',
-                  }}
-                >
-                  <Text className="text-[10px] font-bold text-white">
-                    {pickedDate.getDate()}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          </Pressable>
+          />
         </View>
 
         {/* Period pills — hidden when a specific date is picked */}
@@ -331,48 +291,54 @@ export default function StatsScreen() {
           </Pressable>
         )}
 
-        {/* Stat grid — 3 compact cards */}
+        {/* Stat rows — each on its own line so big numbers have room */}
         <Animated.View
           entering={FadeInUp.duration(320)}
-          className="mx-5 mt-4 flex-row"
+          className="mx-5 mt-4"
           style={{ gap: 10 }}
         >
-          <StatCard
+          <StatRow
             label={t('stats.totalSpent')}
             isLoading={isLoading}
             shadow={cardShadow}
             accent="#007AFF"
+            onPress={() => setExpandedTotal((v) => !v)}
+            expanded={expandedTotal}
           >
             <MoneyText
               amount={totalAmount}
               currency={totalCurrency}
-              size={17}
-              weight="800"
+              size={expandedTotal ? 13 : 15}
+              weight="700"
+              compact={!expandedTotal}
             />
-          </StatCard>
-          <StatCard
+          </StatRow>
+          <StatRow
             label={t('stats.avgPerDay')}
             isLoading={isLoading}
             shadow={cardShadow}
             accent="#34C759"
+            onPress={() => setExpandedAvg((v) => !v)}
+            expanded={expandedAvg}
           >
             <MoneyText
               amount={Math.round(avgPerDay)}
               currency={totalCurrency}
-              size={15}
+              size={expandedAvg ? 13 : 15}
               weight="700"
+              compact={!expandedAvg}
             />
-          </StatCard>
-          <StatCard
+          </StatRow>
+          <StatRow
             label={t('stats.transactions')}
             isLoading={isLoading}
             shadow={cardShadow}
             accent="#FF9500"
           >
-            <Text className="text-[17px] font-extrabold text-black dark:text-white">
+            <Text className="text-[15px] font-bold text-black dark:text-white">
               {totalCount}
             </Text>
-          </StatCard>
+          </StatRow>
         </Animated.View>
 
         {/* Trend bar chart */}
@@ -416,57 +382,79 @@ export default function StatsScreen() {
             className="mx-5 mt-4 rounded-[22px] bg-white p-5 dark:bg-[#1C1C1E]"
             style={cardShadow}
           >
-            <Text className="text-[17px] font-bold text-black dark:text-white">
-              {t('stats.byCategory')}
-            </Text>
-            <View className="mt-3 flex-row items-center">
-              <View>
-                <DonutChart
-                  data={slices}
-                  size={140}
-                  strokeWidth={20}
-                  centerContent={
-                    <View className="items-center">
-                      <Text className="text-[9px] font-semibold uppercase tracking-wider text-[#8E8E93]">
-                        {t('stats.total')}
-                      </Text>
-                      <View className="mt-[1px]">
-                        <MoneyText
-                          amount={totalAmount}
-                          currency={totalCurrency}
-                          size={13}
-                        />
-                      </View>
-                    </View>
-                  }
-                />
-              </View>
-              <View className="ml-4 flex-1">
-                {slices.slice(0, 5).map((s) => {
-                  const pct = totalAmount > 0 ? (s.value / totalAmount) * 100 : 0;
-                  return (
-                    <View key={s.label} className="mb-[10px] flex-row items-center">
-                      <View
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: 4,
-                          backgroundColor: s.color,
-                        }}
-                      />
-                      <Text
-                        className="ml-2 flex-1 text-[12px] font-medium capitalize text-black dark:text-white"
-                        numberOfLines={1}
-                      >
-                        {s.icon} {s.label}
-                      </Text>
-                      <Text className="text-[11px] font-semibold text-[#8E8E93]">
-                        {pct.toFixed(0)}%
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[15px] font-bold text-black dark:text-white">
+                {t('stats.byCategory')}
+              </Text>
+              <Text className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93]">
+                {t('stats.categoriesCount', { count: slices.length })}
+              </Text>
+            </View>
+
+            {/* Stacked horizontal bar — single line split by category colors */}
+            <View
+              className="mt-4 h-[14px] flex-row overflow-hidden rounded-full bg-[#F2F2F7] dark:bg-[#2C2C2E]"
+            >
+              {slices.map((s, idx) => {
+                const pct = totalAmount > 0 ? (s.value / totalAmount) * 100 : 0;
+                if (pct <= 0) return null;
+                return (
+                  <View
+                    key={s.label}
+                    style={{
+                      width: `${pct}%`,
+                      backgroundColor: s.color,
+                      marginLeft: idx === 0 ? 0 : 1,
+                    }}
+                  />
+                );
+              })}
+            </View>
+
+            {/* Top 4 legend — 2 columns */}
+            <View className="mt-4 flex-row flex-wrap">
+              {slices.slice(0, 4).map((s, idx) => {
+                const pct = totalAmount > 0 ? (s.value / totalAmount) * 100 : 0;
+                const isLeft = idx % 2 === 0;
+                return (
+                  <View
+                    key={s.label}
+                    style={{
+                      width: '50%',
+                      paddingRight: isLeft ? 12 : 0,
+                      paddingLeft: isLeft ? 0 : 6,
+                      marginTop: idx < 2 ? 0 : 12,
+                    }}
+                    className="flex-row items-center"
+                  >
+                    <View
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: s.color,
+                        marginRight: 6,
+                      }}
+                    />
+                    <Text style={{ fontSize: 13, marginRight: 4 }}>
+                      {s.icon}
+                    </Text>
+                    <Text
+                      className="flex-1 text-[12px] font-medium capitalize text-black dark:text-white"
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {s.label}
+                    </Text>
+                    <Text
+                      className="ml-[6px] text-[11px] font-bold text-[#8E8E93]"
+                      style={{ fontVariant: ['tabular-nums'] }}
+                    >
+                      {pct.toFixed(0)}%
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </Animated.View>
         ) : null}
@@ -624,49 +612,165 @@ export default function StatsScreen() {
   );
 }
 
-function StatCard({
+function CalendarButton({
+  picked,
+  onPress,
+}: {
+  picked: Date | null;
+  onPress: () => void;
+}) {
+  // Recreates the iOS Calendar app icon: red header strip with two
+  // silver spiral rings, white body, today's (or picked) day number in
+  // dark gray. Composed from plain Views so it scales crisply and does
+  // not depend on any icon font.
+  const SIZE = 32;
+  const RADIUS = SIZE * 0.22;
+  const HEADER_HEIGHT = SIZE * 0.3;
+  const day = (picked ?? new Date()).getDate();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      className="ml-2 mt-1 active:opacity-80"
+      hitSlop={12}
+      style={{
+        width: SIZE,
+        height: SIZE,
+      }}
+    >
+      <View
+        style={{
+          width: SIZE,
+          height: SIZE,
+          borderRadius: RADIUS,
+          backgroundColor: '#FFFFFF',
+          overflow: 'hidden',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.18,
+          shadowRadius: 5,
+          elevation: 4,
+        }}
+      >
+        {/* Red header strip */}
+        <View
+          style={{
+            width: '100%',
+            height: HEADER_HEIGHT,
+            backgroundColor: '#E4453A',
+          }}
+        />
+
+        {/* Two silver ring binders poking through the red */}
+        {[0.3, 0.7].map((pos) => (
+          <View
+            key={pos}
+            style={{
+              position: 'absolute',
+              top: -2,
+              left: SIZE * pos - 2,
+              width: 4,
+              height: HEADER_HEIGHT * 0.7,
+              borderRadius: 2,
+              backgroundColor: '#D0D0D0',
+            }}
+          >
+            <View
+              style={{
+                position: 'absolute',
+                top: 3,
+                left: 0,
+                width: 4,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: '#8A8A8A',
+              }}
+            />
+          </View>
+        ))}
+
+        {/* Day number centered in the white body */}
+        <View
+          style={{
+            position: 'absolute',
+            top: HEADER_HEIGHT,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: SIZE * 0.44,
+              fontWeight: '600',
+              color: '#3A3A3A',
+              fontVariant: ['tabular-nums'],
+              includeFontPadding: false,
+              lineHeight: SIZE * 0.5,
+            }}
+          >
+            {day}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+function StatRow({
   label,
   children,
   isLoading,
   shadow,
   accent,
+  onPress,
+  expanded,
 }: {
   label: string;
   children: React.ReactNode;
   isLoading?: boolean;
   shadow: object;
   accent: string;
+  onPress?: () => void;
+  expanded?: boolean;
 }) {
+  const Wrapper: typeof Pressable | typeof View = onPress ? Pressable : View;
   return (
-    <View
-      className="flex-1 overflow-hidden rounded-[18px] bg-white p-[14px] dark:bg-[#1C1C1E]"
+    <Wrapper
+      onPress={onPress}
+      className={`flex-row items-center overflow-hidden rounded-[16px] bg-white px-[16px] py-[14px] dark:bg-[#1C1C1E] ${
+        onPress ? 'active:opacity-80' : ''
+      }`}
       style={shadow}
     >
-      <View className="flex-row items-center">
-        <View
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: 3,
-            backgroundColor: accent,
-          }}
-        />
-        <Text
-          className="ml-[6px] text-[10px] font-semibold uppercase tracking-wider text-[#8E8E93]"
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
+      <View
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: accent,
+          marginRight: 10,
+        }}
+      />
+      <Text
+        className="text-[12px] font-semibold uppercase tracking-wider text-[#8E8E93]"
+        numberOfLines={1}
+        style={{ flexShrink: 1, flexGrow: expanded ? 0 : 1 }}
+      >
+        {label}
+      </Text>
+      <View
+        style={{
+          marginLeft: 12,
+          flex: expanded ? 1 : 0,
+          flexShrink: 1,
+          alignItems: 'flex-end',
+        }}
+      >
+        {isLoading ? <LoadingSpinner size="small" /> : children}
       </View>
-      <View className="mt-[8px]">
-        {isLoading ? (
-          <View className="h-[20px] justify-center">
-            <LoadingSpinner size="small" />
-          </View>
-        ) : (
-          children
-        )}
-      </View>
-    </View>
+    </Wrapper>
   );
 }

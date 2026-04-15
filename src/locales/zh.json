@@ -84,7 +84,9 @@
     "periodMonthly": "本月",
     "recentExpenses": "最近支出",
     "addFirst": "添加支出",
-    "expense": "支出"
+    "expense": "支出",
+    "showMore": "显示更多",
+    "showingCount": "{{total}} 中的 {{shown}}"
   },
   "stats": {
     "title": "统计",

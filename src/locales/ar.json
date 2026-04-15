@@ -84,7 +84,9 @@
     "periodMonthly": "الشهر",
     "recentExpenses": "المصاريف الأخيرة",
     "addFirst": "إضافة مصروف",
-    "expense": "مصروف"
+    "expense": "مصروف",
+    "showMore": "عرض المزيد",
+    "showingCount": "{{shown}} من {{total}}"
   },
   "stats": {
     "title": "الإحصائيات",

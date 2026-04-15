@@ -24,6 +24,29 @@ export function formatMoneyParts(amount: number, currency: Currency): { amount: 
   return { amount: formatWithSpaces(amount, decimals), currency };
 }
 
+// Compact form that keeps the number short regardless of magnitude.
+// Uses Intl.NumberFormat's "compact" notation so the suffix is localized
+// (1.2M in English, 1,2 млн in Russian, etc.). Below 10k we keep the
+// full number — the compact suffix kicks in only where it actually helps.
+export function formatCompactMoneyParts(
+  amount: number,
+  currency: Currency,
+  locale = 'en',
+): { amount: string; currency: string } {
+  if (Math.abs(amount) < 10_000) {
+    return formatMoneyParts(amount, currency);
+  }
+  try {
+    const formatted = new Intl.NumberFormat(locale, {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(amount);
+    return { amount: formatted, currency };
+  } catch {
+    return formatMoneyParts(amount, currency);
+  }
+}
+
 /** Format a raw numeric string with thousand separators as the user types */
 export function formatAmountInput(raw: string): string {
   // Strip everything except digits and one decimal point

@@ -84,7 +84,9 @@
     "periodMonthly": "Mois",
     "recentExpenses": "Dépenses récentes",
     "addFirst": "Ajouter une dépense",
-    "expense": "Dépense"
+    "expense": "Dépense",
+    "showMore": "Afficher plus",
+    "showingCount": "{{shown}} sur {{total}}"
   },
   "stats": {
     "title": "Statistiques",

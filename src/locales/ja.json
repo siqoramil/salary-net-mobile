@@ -84,7 +84,9 @@
     "periodMonthly": "今月",
     "recentExpenses": "最近の支出",
     "addFirst": "支出を追加",
-    "expense": "支出"
+    "expense": "支出",
+    "showMore": "もっと見る",
+    "showingCount": "{{total}}件中{{shown}}件"
   },
   "stats": {
     "title": "統計",

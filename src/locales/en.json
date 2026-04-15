@@ -84,7 +84,9 @@
     "periodMonthly": "Month",
     "recentExpenses": "Recent Expenses",
     "addFirst": "Add Expense",
-    "expense": "Expense"
+    "expense": "Expense",
+    "showMore": "Show more",
+    "showingCount": "{{shown}} of {{total}}"
   },
   "stats": {
     "title": "Statistics",

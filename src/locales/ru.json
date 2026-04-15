@@ -84,7 +84,9 @@
     "periodMonthly": "Месяц",
     "recentExpenses": "Последние расходы",
     "addFirst": "Добавить расход",
-    "expense": "Расход"
+    "expense": "Расход",
+    "showMore": "Показать ещё",
+    "showingCount": "{{shown}} из {{total}}"
   },
   "stats": {
     "title": "Статистика",

@@ -84,7 +84,9 @@
     "periodMonthly": "이번 달",
     "recentExpenses": "최근 지출",
     "addFirst": "지출 추가",
-    "expense": "지출"
+    "expense": "지출",
+    "showMore": "더 보기",
+    "showingCount": "{{total}}개 중 {{shown}}개"
   },
   "stats": {
     "title": "통계",
