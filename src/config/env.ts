@@ -40,6 +40,18 @@ function resolveApiUrl(): string {
   return 'http://localhost:4000/api/v1';
 }
 
+const API_URL = resolveApiUrl();
+
+// Release builds must never speak HTTP — tokens travel in Authorization
+// headers, and a typo like `http://api.salarynet.app` would leak credentials
+// on any untrusted network. Fail the build-start, not runtime-later.
+if (!__DEV__ && !/^https:\/\//i.test(API_URL)) {
+  throw new Error(
+    `Refusing to start: EXPO_PUBLIC_API_URL must use https:// in production builds. ` +
+      `Got: ${API_URL}`,
+  );
+}
+
 export const env = {
-  API_URL: resolveApiUrl(),
+  API_URL,
 };

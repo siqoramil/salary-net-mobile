@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { storage, StorageKeys } from '../lib/storage';
-import { secureTokens } from '../lib/secureTokens';
+import { secureTokens, secureUser } from '../lib/secureTokens';
 import type { AuthResponse, User } from '../types/auth';
 
 interface AuthState {
@@ -14,22 +13,30 @@ interface AuthState {
   clear: () => void;
 }
 
+function parseUser(json: string | null): User | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as User;
+  } catch {
+    return null;
+  }
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   accessToken: null,
   refreshToken: null,
   isHydrated: false,
   hydrate: () => {
-    const userJson = storage.getString(StorageKeys.USER);
     set({
-      user: userJson ? (JSON.parse(userJson) as User) : null,
+      user: parseUser(secureUser.get()),
       accessToken: secureTokens.getAccess(),
       refreshToken: secureTokens.getRefresh(),
       isHydrated: true,
     });
   },
   setSession: ({ user, accessToken, refreshToken }) => {
-    storage.set(StorageKeys.USER, JSON.stringify(user));
+    secureUser.set(JSON.stringify(user));
     secureTokens.setAccess(accessToken);
     secureTokens.setRefresh(refreshToken);
     set({ user, accessToken, refreshToken });
@@ -38,12 +45,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => {
       if (!state.user) return state;
       const updated = { ...state.user, ...partial };
-      storage.set(StorageKeys.USER, JSON.stringify(updated));
+      secureUser.set(JSON.stringify(updated));
       return { user: updated };
     });
   },
   clear: () => {
-    storage.delete(StorageKeys.USER);
     secureTokens.clear();
     set({ user: null, accessToken: null, refreshToken: null });
   },

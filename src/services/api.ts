@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 import { env } from '../config/env';
-import { storage, StorageKeys } from '../lib/storage';
 import { secureTokens } from '../lib/secureTokens';
+import { queryClient } from '../lib/queryClient';
 
 export const api = axios.create({
   baseURL: env.API_URL,
@@ -60,7 +60,7 @@ api.interceptors.response.use(
     } catch (err) {
       flushQueue(null);
       secureTokens.clear();
-      storage.delete(StorageKeys.USER);
+      queryClient.clear();
       return Promise.reject(err);
     } finally {
       isRefreshing = false;

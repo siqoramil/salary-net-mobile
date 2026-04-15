@@ -249,23 +249,31 @@ export default function ChatScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
               paddingHorizontal: 14,
-              paddingTop: 4,
-              paddingBottom: 8,
-              gap: 8,
+              paddingTop: 10,
+              paddingBottom: 32,
+              gap: 10,
             }}
           >
             {QUICK_ACTIONS.map((q) => (
               <Pressable
                 key={q.key}
                 onPress={() => send(q.text)}
-                className="flex-row items-center rounded-full bg-white px-[12px] py-[8px] active:opacity-80 dark:bg-[#1C1C1E]"
+                className="flex-row items-center rounded-full pl-[6px] pr-[16px] active:opacity-80"
                 style={{
-                  borderWidth: 1,
-                  borderColor: `${q.accent}33`,
+                  height: 44,
+                  backgroundColor: `${q.accent}14`,
                 }}
               >
-                <Text style={{ fontSize: 13 }}>{q.icon}</Text>
-                <Text className="ml-[6px] text-[12px] font-semibold text-black dark:text-white">
+                <View
+                  className="h-[32px] w-[32px] items-center justify-center rounded-full"
+                  style={{ backgroundColor: `${q.accent}26` }}
+                >
+                  <Text style={{ fontSize: 17 }}>{q.icon}</Text>
+                </View>
+                <Text
+                  className="ml-[10px] text-[14px] font-semibold"
+                  style={{ color: q.accent }}
+                >
                   {t(`chat.${q.key}`)}
                 </Text>
               </Pressable>

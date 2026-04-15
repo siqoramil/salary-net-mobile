@@ -1,7 +1,5 @@
 import { create } from 'zustand';
-import { storage } from '../lib/storage';
-
-const PIN_KEY = 'app.pinCode';
+import { securePin } from '../lib/secureTokens';
 
 interface PinState {
   hasPin: boolean;
@@ -13,23 +11,27 @@ interface PinState {
   hydrate: () => void;
 }
 
-export const usePinStore = create<PinState>((set, get) => ({
+// PIN is stored in SecureStore (Keychain / EncryptedSharedPreferences) so
+// it is encrypted at rest and not readable from the app's sandboxed file
+// system without OS-level entitlements. Comparison stays in-memory against
+// the hydrated value.
+export const usePinStore = create<PinState>((set) => ({
   hasPin: false,
   unlocked: false,
 
   setPin: (pin) => {
-    storage.set(PIN_KEY, pin);
+    securePin.set(pin);
     set({ hasPin: true, unlocked: true });
   },
 
   clearPin: () => {
-    storage.delete(PIN_KEY);
+    securePin.clear();
     set({ hasPin: false, unlocked: true });
   },
 
   verifyPin: (pin) => {
-    const stored = storage.getString(PIN_KEY);
-    if (stored === pin) {
+    const stored = securePin.get();
+    if (stored && stored === pin) {
       set({ unlocked: true });
       return true;
     }
@@ -39,7 +41,7 @@ export const usePinStore = create<PinState>((set, get) => ({
   setUnlocked: (v) => set({ unlocked: v }),
 
   hydrate: () => {
-    const stored = storage.getString(PIN_KEY);
+    const stored = securePin.get();
     const hasPin = !!stored && stored.length === 4;
     set({ hasPin, unlocked: !hasPin });
   },

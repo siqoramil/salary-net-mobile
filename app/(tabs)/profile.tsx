@@ -1,15 +1,8 @@
 import { useState } from 'react';
-import {
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
 
@@ -61,6 +54,7 @@ export default function ProfileScreen() {
   const { hasPin, clearPin } = usePinStore();
   const showToast = useUIStore((s) => s.showToast);
   const showConfirm = useUIStore((s) => s.showConfirm);
+  const queryClient = useQueryClient();
 
   const [passwordModal, setPasswordModal] = useState(false);
   const [profileModal, setProfileModal] = useState(false);
@@ -83,6 +77,9 @@ export default function ProfileScreen() {
         }
         clearPin();
         clear();
+        // Drop all cached queries so the next logged-in user never sees
+        // stale expenses, profile, or chat data from the previous session.
+        queryClient.clear();
       },
     });
   };
@@ -253,42 +250,6 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* Device */}
-        <SectionHeader label={t('profile.device')} />
-        <View className="mx-4 overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
-          <InfoRow
-            emoji="📱"
-            color="#007AFF"
-            label={t('profile.deviceModel')}
-            value={
-              Constants.deviceName ??
-              `${Platform.OS === 'ios' ? 'iPhone' : 'Android'}`
-            }
-          />
-          <RowDivider />
-          <InfoRow
-            emoji="⚙️"
-            color="#8E8E93"
-            label={t('profile.deviceOs')}
-            value={`${Platform.OS === 'ios' ? 'iOS' : 'Android'} ${Platform.Version}`}
-          />
-          <RowDivider />
-          <InfoRow
-            emoji="🌐"
-            color="#5856D6"
-            label={t('profile.deviceLocale')}
-            value={locale.toUpperCase()}
-          />
-          <RowDivider />
-          <InfoRow
-            emoji="🕒"
-            color="#FF2D55"
-            label={t('profile.deviceTimezone')}
-            value={Intl.DateTimeFormat().resolvedOptions().timeZone}
-            isLast
-          />
-        </View>
-
         {/* About */}
         <SectionHeader label={t('profile.about')} />
         <View className="mx-4 overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
@@ -297,17 +258,6 @@ export default function ProfileScreen() {
             color="#007AFF"
             label={t('profile.appVersion')}
             value={`v${Constants.expoConfig?.version ?? '1.0.0'}`}
-          />
-          <RowDivider />
-          <InfoRow
-            emoji="🔨"
-            color="#AF52DE"
-            label={t('profile.buildNumber')}
-            value={String(
-              Platform.OS === 'ios'
-                ? Constants.expoConfig?.ios?.buildNumber ?? '1'
-                : Constants.expoConfig?.android?.versionCode ?? '1',
-            )}
           />
           <RowDivider />
           <SettingsRow
@@ -698,7 +648,7 @@ function EditProfileModal({
   const changed =
     fullName.trim() !== initialName || email.trim().toLowerCase() !== initialEmail.toLowerCase();
   const canSave = nameValid && emailValid && changed && !saveMutation.isPending;
-  const canVerify = code.trim().length === 6 && !verifyMutation.isPending;
+  const canVerify = code.trim().length === 8 && !verifyMutation.isPending;
 
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
@@ -757,10 +707,12 @@ function EditProfileModal({
             <Input
               label={t('profile.verificationCode')}
               value={code}
-              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
-              placeholder="123456"
-              keyboardType="number-pad"
-              maxLength={6}
+              onChangeText={(v) =>
+                setCode(v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8))
+              }
+              placeholder="ABCD2345"
+              autoCapitalize="characters"
+              maxLength={8}
             />
             {error ? (
               <Text className="mb-2 text-center text-[13px] text-[#FF3B30]">{error}</Text>
