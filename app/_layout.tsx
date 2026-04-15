@@ -73,6 +73,7 @@ function RootLayoutNav({ resolved }: { resolved: 'light' | 'dark' }) {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen name="change-pin" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
       <AddExpenseSheet visible={addExpenseOpen} onClose={closeAddExpense} />
       <ToastHost />
