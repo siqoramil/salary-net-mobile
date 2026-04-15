@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, Text, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -14,8 +14,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePinStore } from '@/src/stores/pinStore';
 import { useUIStore } from '@/src/stores/uiStore';
 
-const PRIMARY = '#6C63FF';
 const PIN_LENGTH = 4;
+const BLUE      = '#5B88D6';
+const BLUE_BG   = '#EBF1FA';
+const BLUE_PRESSED = '#D0E0F5';
 
 type Step = 'verify' | 'create' | 'confirm';
 
@@ -34,7 +36,6 @@ export default function ChangePinScreen() {
   const [firstPin, setFirstPin] = useState('');
   const [error, setError] = useState('');
 
-  // Shake animation
   const shakeX = useSharedValue(0);
   const shakeStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: shakeX.value }],
@@ -99,18 +100,18 @@ export default function ChangePinScreen() {
     setError('');
   };
 
-  // ─── Layout ────────────────────────────────────────────────────────────────
-  const CELL_W = Math.floor(screenW / 3);
-  const CELL_H = Math.round(CELL_W * 0.9);
-  const BTN = Math.round(CELL_W * 0.62);
-  const ICON_SIZE = Math.round(BTN * 0.38);
-  const FONT_SIZE = Math.round(BTN * 0.40);
+  // ─── Grid ─────────────────────────────────────────────────────────────────
+  const CELL_W  = Math.floor(screenW / 3);
+  const CELL_H  = Math.round(CELL_W * 1.08);
+  const BTN     = Math.round(CELL_W * 0.76);
+  const ICON_SZ = Math.round(BTN * 0.36);
+  const FONT_SZ = Math.round(BTN * 0.38);
 
-  // ─── Colors ────────────────────────────────────────────────────────────────
-  const bg = isDark ? '#000' : '#FFF';
+  const bg        = isDark ? '#000' : '#FFF';
   const textColor = isDark ? '#FFF' : '#1C1C1E';
-  const btnBg = isDark ? '#2C2C2E' : '#E4E4EB';
-  const iconColor = isDark ? '#8E8E93' : '#636366';
+  const btnBg     = isDark ? '#1C2740' : BLUE_BG;
+  const btnPressed = isDark ? '#243252' : BLUE_PRESSED;
+  const iconColor = isDark ? '#8E8E93' : '#3C3C43';
 
   const title =
     step === 'verify'
@@ -145,18 +146,18 @@ export default function ChangePinScreen() {
           height: BTN,
           borderRadius: BTN / 2,
           backgroundColor: onPress
-            ? pressed && isDigit ? PRIMARY : pressed ? `${PRIMARY}22` : btnBg
+            ? pressed ? btnPressed : btnBg
             : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
         })}
       >
-        {({ pressed }) =>
+        {({ pressed: _ }) =>
           typeof children === 'string' ? (
             <Text style={{
-              fontSize: FONT_SIZE,
+              fontSize: FONT_SZ,
               fontWeight: '300',
-              color: pressed && isDigit ? '#FFF' : textColor,
+              color: BLUE,
               includeFontPadding: false,
             }}>
               {children}
@@ -205,26 +206,8 @@ export default function ChangePinScreen() {
 
       {/* Content */}
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        {/* Lock icon */}
-        <View style={{
-          width: 72,
-          height: 72,
-          borderRadius: 36,
-          backgroundColor: PRIMARY,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: PRIMARY,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.30,
-          shadowRadius: 16,
-          elevation: 10,
-        }}>
-          <Ionicons name="lock-closed-outline" size={32} color="#fff" />
-        </View>
-
         {/* Title */}
         <Text style={{
-          marginTop: 20,
           fontSize: 22,
           fontWeight: '700',
           color: textColor,
@@ -239,27 +222,27 @@ export default function ChangePinScreen() {
         </Text>
 
         {/* PIN dots */}
-        <Animated.View style={[{ flexDirection: 'row', marginTop: 32 }, shakeStyle]}>
+        <Animated.View style={[{ flexDirection: 'row', marginTop: 28, marginBottom: 6 }, shakeStyle]}>
           {Array.from({ length: PIN_LENGTH }).map((_, i) => (
             <View key={i} style={{
               width: 14,
               height: 14,
               borderRadius: 7,
               marginHorizontal: 10,
-              backgroundColor: i < digits.length ? PRIMARY : (isDark ? '#48484A' : '#DCDCE4'),
+              backgroundColor: i < digits.length ? BLUE : (isDark ? '#3A3A3C' : '#D1D8E8'),
             }} />
           ))}
         </Animated.View>
 
         {/* Error */}
-        <View style={{ height: 22, justifyContent: 'center', marginTop: 10 }}>
+        <View style={{ height: 22, justifyContent: 'center' }}>
           {error ? (
             <Text style={{ fontSize: 13, color: '#FF3B30' }}>{error}</Text>
           ) : null}
         </View>
 
         {/* Numpad */}
-        <View style={{ width: screenW, marginTop: 8 }}>
+        <View style={{ width: screenW, marginTop: 12 }}>
           {([[1, 2, 3], [4, 5, 6], [7, 8, 9]] as number[][]).map((row, ri) => (
             <View key={ri} style={{ flexDirection: 'row' }}>
               {row.map((n) => (
@@ -269,12 +252,14 @@ export default function ChangePinScreen() {
               ))}
             </View>
           ))}
-          <View style={{ flexDirection: 'row' }}>
+
+          {/* Bottom row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             {/* empty left cell */}
             <View style={{ width: CELL_W, height: CELL_H }} />
             <Cell onPress={() => handleDigit('0')} isDigit>0</Cell>
             <Cell onPress={handleDelete}>
-              <Ionicons name="backspace-outline" size={ICON_SIZE} color={iconColor} />
+              <Ionicons name="backspace-outline" size={ICON_SZ} color={iconColor} />
             </Cell>
           </View>
         </View>

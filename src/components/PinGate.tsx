@@ -15,7 +15,9 @@ import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
 
 const PIN_LENGTH = 4;
-const PRIMARY = '#6C63FF';
+const BLUE     = '#5B88D6';
+const BLUE_BG  = '#EBF1FA';
+const BLUE_PRESSED = '#D0E0F5';
 
 // ─── PIN dot ─────────────────────────────────────────────────────────────────
 function PinDot({ filled, isDark }: { filled: boolean; isDark: boolean }) {
@@ -36,23 +38,15 @@ function PinDot({ filled, isDark }: { filled: boolean; isDark: boolean }) {
     <Animated.View
       style={[
         {
-          width: 54,
-          height: 54,
-          borderRadius: 27,
-          borderWidth: filled ? 2 : 1.5,
-          borderColor: filled ? PRIMARY : isDark ? '#48484A' : '#DCDCE4',
-          backgroundColor: filled ? '#EDE9FF' : 'transparent',
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: 14,
+          height: 14,
+          borderRadius: 7,
+          backgroundColor: filled ? BLUE : (isDark ? '#3A3A3C' : '#D1D8E8'),
           marginHorizontal: 10,
         },
         animStyle,
       ]}
-    >
-      {filled ? (
-        <Text style={{ fontSize: 15, color: PRIMARY, fontWeight: '800' }}>✱</Text>
-      ) : null}
-    </Animated.View>
+    />
   );
 }
 
@@ -74,13 +68,11 @@ export function PinGate({ children }: { children: React.ReactNode }) {
 
   const didSetupRef = useRef(false);
 
-  // Shake animation
   const shakeX = useSharedValue(0);
   const shakeStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: shakeX.value }],
   }));
 
-  // Fade-in on mount
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
   const fadeStyle = useAnimatedStyle(() => ({
@@ -90,7 +82,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if ((hasPin && !unlocked) || isSetup) {
-      opacity.value = withTiming(1, { duration: 340 });
+      opacity.value = withTiming(1, { duration: 300 });
       translateY.value = withSpring(0, { damping: 20, stiffness: 160 });
     }
   }, [hasPin, unlocked, isSetup, opacity, translateY]);
@@ -181,19 +173,18 @@ export function PinGate({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // ─── Grid math ───────────────────────────────────────────────────────────────
-  // Each cell is exactly 1/3 of screen width; button is centered inside the cell.
-  const CELL_W = Math.floor(screenW / 3);
-  const CELL_H = Math.round(CELL_W * 0.9);
-  const BTN    = Math.round(CELL_W * 0.62); // ≈ 80px on 390px screen
-  const ICON_SIZE = Math.round(BTN * 0.38);
-  const FONT_SIZE  = Math.round(BTN * 0.40);
+  // ─── Grid ─────────────────────────────────────────────────────────────────
+  const CELL_W  = Math.floor(screenW / 3);
+  const CELL_H  = Math.round(CELL_W * 1.08);
+  const BTN     = Math.round(CELL_W * 0.76);
+  const ICON_SZ = Math.round(BTN * 0.36);
+  const FONT_SZ = Math.round(BTN * 0.38);
 
-  // ─── Colors ─────────────────────────────────────────────────────────────────
   const bg        = isDark ? '#000' : '#FFF';
   const textColor = isDark ? '#FFF' : '#1C1C1E';
-  const btnBg     = isDark ? '#2C2C2E' : '#E4E4EB';
-  const iconColor = isDark ? '#8E8E93' : '#636366';
+  const btnBg     = isDark ? '#1C2740' : BLUE_BG;
+  const btnPressed = isDark ? '#243252' : BLUE_PRESSED;
+  const iconColor = isDark ? '#8E8E93' : '#3C3C43';
 
   const title = isSetup
     ? setupStep === 'create' ? t('pin.createTitle') : t('pin.confirmTitle')
@@ -203,7 +194,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
     ? setupStep === 'create' ? t('pin.createSubtitle') : t('pin.confirmSubtitle')
     : null;
 
-  // ─── Cell wrapper — guarantees even grid placement ───────────────────────────
+  // ─── Numpad cell ──────────────────────────────────────────────────────────
   const Cell = ({
     onPress,
     children,
@@ -222,126 +213,68 @@ export function PinGate({ children }: { children: React.ReactNode }) {
           height: BTN,
           borderRadius: BTN / 2,
           backgroundColor: onPress
-            ? pressed && isDigit ? PRIMARY : pressed ? `${PRIMARY}22` : btnBg
+            ? pressed ? btnPressed : btnBg
             : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
         })}
       >
-        {({ pressed }) =>
+        {({ pressed: _ }) =>
           typeof children === 'string' ? (
-            <Text
-              style={{
-                fontSize: FONT_SIZE,
-                fontWeight: '300',
-                color: pressed && isDigit ? '#FFF' : textColor,
-                includeFontPadding: false,
-              }}
-            >
+            <Text style={{
+              fontSize: FONT_SZ,
+              fontWeight: '300',
+              color: BLUE,
+              includeFontPadding: false,
+            }}>
               {children}
             </Text>
-          ) : (
-            children
-          )
+          ) : children
         }
       </Pressable>
     </View>
   );
 
-  // ─── Forgot-PIN cell (not a round button, just centered text) ───────────────
-  const ForgotCell = () => (
-    <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
-      {!isSetup ? (
-        <Pressable onPress={handleForgetCode} hitSlop={12}>
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: '600',
-              color: PRIMARY,
-              textAlign: 'center',
-              lineHeight: 17,
-            }}
-          >
-            {t('pin.forget')}?
-          </Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
-      <Animated.View
-        style={[
-          { flex: 1, alignItems: 'center', justifyContent: 'center' },
-          fadeStyle,
-        ]}
-      >
-        {/* Lock icon */}
-        <View
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            backgroundColor: PRIMARY,
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: PRIMARY,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.32,
-            shadowRadius: 18,
-            elevation: 10,
-          }}
-        >
-          <Ionicons
-            name={isSetup ? 'lock-open-outline' : 'lock-closed-outline'}
-            size={36}
-            color="#fff"
-          />
-        </View>
+      <Animated.View style={[{ flex: 1, alignItems: 'center', justifyContent: 'center' }, fadeStyle]}>
 
         {/* Title */}
-        <Text
-          style={{
-            marginTop: 20,
-            fontSize: 22,
-            fontWeight: '700',
-            color: textColor,
-            letterSpacing: -0.2,
-          }}
-        >
+        <Text style={{
+          fontSize: 22,
+          fontWeight: '700',
+          color: textColor,
+          letterSpacing: -0.2,
+        }}>
           {title}
         </Text>
 
         {/* Subtitle */}
-        <Text
-          style={{
-            marginTop: 6,
-            fontSize: 14,
-            color: '#8E8E93',
-            opacity: subtitle ? 1 : 0,
-          }}
-        >
+        <Text style={{
+          marginTop: 6,
+          fontSize: 14,
+          color: '#8E8E93',
+          opacity: subtitle ? 1 : 0,
+        }}>
           {subtitle ?? ' '}
         </Text>
 
         {/* PIN dots */}
-        <Animated.View style={[{ flexDirection: 'row', marginTop: 28 }, shakeStyle]}>
+        <Animated.View style={[{ flexDirection: 'row', marginTop: 28, marginBottom: 6 }, shakeStyle]}>
           {Array.from({ length: PIN_LENGTH }).map((_, i) => (
             <PinDot key={i} filled={i < digits.length} isDark={isDark} />
           ))}
         </Animated.View>
 
         {/* Error */}
-        <View style={{ height: 22, justifyContent: 'center', marginTop: 6 }}>
+        <View style={{ height: 22, justifyContent: 'center' }}>
           {error ? (
             <Text style={{ fontSize: 13, color: '#FF3B30' }}>{error}</Text>
           ) : null}
         </View>
 
-        {/* Numpad — each row is exactly screenW wide, cells use flex */}
-        <View style={{ width: screenW, marginTop: 6 }}>
-          {/* Rows 1–9 */}
+        {/* Numpad */}
+        <View style={{ width: screenW, marginTop: 12 }}>
           {([[1, 2, 3], [4, 5, 6], [7, 8, 9]] as number[][]).map((row, ri) => (
             <View key={ri} style={{ flexDirection: 'row' }}>
               {row.map((n) => (
@@ -353,14 +286,47 @@ export function PinGate({ children }: { children: React.ReactNode }) {
           ))}
 
           {/* Bottom row */}
-          <View style={{ flexDirection: 'row' }}>
-            <ForgotCell />
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {/* Forget code */}
+            <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
+              {!isSetup ? (
+                <Pressable onPress={handleForgetCode} hitSlop={12}>
+                  <Text style={{
+                    fontSize: 13,
+                    fontWeight: '500',
+                    color: BLUE,
+                    textAlign: 'center',
+                    lineHeight: 18,
+                  }}>
+                    {t('pin.forget')}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {/* 0 */}
             <Cell onPress={() => handleDigit('0')} isDigit>0</Cell>
+
+            {/* Backspace */}
             <Cell onPress={handleDelete}>
-              <Ionicons name="backspace-outline" size={ICON_SIZE} color={iconColor} />
+              <Ionicons name="backspace-outline" size={ICON_SZ} color={iconColor} />
             </Cell>
           </View>
         </View>
+
+        {/* Log out — only on lock screen (not setup) */}
+        {!isSetup ? (
+          <Pressable onPress={handleForgetCode} style={{ marginTop: 32 }} hitSlop={10}>
+            <Text style={{
+              fontSize: 15,
+              color: '#AEAEAE',
+              textDecorationLine: 'underline',
+            }}>
+              {t('profile.signOut')}
+            </Text>
+          </Pressable>
+        ) : null}
+
       </Animated.View>
     </View>
   );
