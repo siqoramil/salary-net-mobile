@@ -141,7 +141,11 @@
     "quickHowMuch": "今日いくら使った？",
     "quickMonthly": "月次サマリー",
     "quickSavingTips": "節約のコツ",
-    "quickAddExample": "ランチ50000追加"
+    "quickAddExample": "ランチ50000追加",
+    "maintenanceTitle": "技術的な休憩",
+    "maintenanceDesc": "SalaryBotは一時的に利用できません。現在対応中ですので、もうすぐ戻ります！",
+    "maintenanceStatus": "一時的に利用不可",
+    "maintenanceChip": "メンテナンス中"
   },
   "profile": {
     "preferences": "設定",
@@ -166,7 +170,9 @@
     "passwordChanged": "パスワードが変更されました",
     "pinCode": "PINコード",
     "pinSet": "設定",
+    "pinChange": "変更",
     "pinReset": "リセット",
+    "pinChanged": "PINコードが変更されました",
     "resetPinTitle": "PINをリセット？",
     "resetPinDesc": "次回アプリを開く時に新しいPINを設定する必要があります。",
     "pinResetDone": "PINがリセットされました",
@@ -217,7 +223,11 @@
   "pin": {
     "createTitle": "PINコードを作成",
     "confirmTitle": "PINコードを確認",
-    "enterTitle": "PINコードを入力",
+    "enterTitle": "PINを入力してください",
+    "enterCurrentTitle": "現在のPINコードを入力",
+    "createSubtitle": "アカウントを守る4桁のPINを設定してください",
+    "confirmSubtitle": "確認のためPINを再入力してください",
+    "enterSubtitle": "PIN / Touch ID を使用",
     "wrong": "PINコードが違います",
     "mismatch": "PINコードが一致しません。もう一度お試しください。",
     "forget": "コードを忘れた",

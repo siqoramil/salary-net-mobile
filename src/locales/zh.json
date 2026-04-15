@@ -141,7 +141,11 @@
     "quickHowMuch": "今天花了多少？",
     "quickMonthly": "月度总结",
     "quickSavingTips": "省钱技巧",
-    "quickAddExample": "添加50000午餐"
+    "quickAddExample": "添加50000午餐",
+    "maintenanceTitle": "技术维护",
+    "maintenanceDesc": "SalaryBot 暂时不可用。我们正在努力修复，很快就会回来！",
+    "maintenanceStatus": "暂时不可用",
+    "maintenanceChip": "维护中"
   },
   "profile": {
     "preferences": "偏好设置",
@@ -166,7 +170,9 @@
     "passwordChanged": "密码已修改",
     "pinCode": "PIN 码",
     "pinSet": "设置",
+    "pinChange": "更改",
     "pinReset": "重置",
+    "pinChanged": "PIN 码修改成功",
     "resetPinTitle": "重置 PIN？",
     "resetPinDesc": "下次打开应用时需要设置新的 PIN。",
     "pinResetDone": "PIN 已重置",
@@ -217,7 +223,11 @@
   "pin": {
     "createTitle": "创建 PIN 码",
     "confirmTitle": "确认 PIN 码",
-    "enterTitle": "输入 PIN 码",
+    "enterTitle": "输入您的 PIN",
+    "enterCurrentTitle": "输入当前 PIN 码",
+    "createSubtitle": "设置 4 位数字 PIN 保护您的账户",
+    "confirmSubtitle": "再次输入 PIN 以确认",
+    "enterSubtitle": "使用 PIN / Touch ID",
     "wrong": "PIN 码错误",
     "mismatch": "PIN 码不匹配，请重试。",
     "forget": "忘记密码",

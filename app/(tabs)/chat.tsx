@@ -25,7 +25,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import type { TFunction } from 'i18next';
 
-import { useLatestConversation, useMessages, useSendMessage } from '@/src/hooks/useChat';
+import { useLatestConversation, useMessages, useSendMessage, useClearHistory } from '@/src/hooks/useChat';
 import { useCreateExpense } from '@/src/hooks/useExpenses';
 import { CATEGORY_BY_ID } from '@/src/constants/categories';
 import { MoneyText } from '@/src/components/ui/MoneyText';
@@ -69,253 +69,163 @@ function formatTime(iso: string): string {
 
 export default function ChatScreen() {
   const { t } = useTranslation();
+  const showConfirm = useUIStore((s) => s.showConfirm);
+  const showToast = useUIStore((s) => s.showToast);
   const convQuery = useLatestConversation();
   const conversationId = convQuery.data?.id;
-  const messagesQuery = useMessages(conversationId);
-  const sendMutation = useSendMessage(conversationId);
-  const createExpense = useCreateExpense();
-  const showToast = useUIStore((s) => s.showToast);
+  const clearMutation = useClearHistory(conversationId);
 
-  const [input, setInput] = useState('');
-  const scrollRef = useRef<ScrollView>(null);
-
-  const messages = messagesQuery.data ?? [];
-
-  useEffect(() => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-  }, [messages.length, sendMutation.isPending]);
-
-  const send = (text?: string) => {
-    const content = (text ?? input).trim();
-    if (!content) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setInput('');
-    sendMutation.mutate(content);
-  };
-
-  const confirmExpense = (action: CreateExpenseAction) => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    createExpense.mutate(
-      {
-        amount: action.data.amount,
-        currency: action.data.currency,
-        category: action.data.category as ExpenseCategoryId,
-        description: action.data.description,
-        expenseDate: action.data.date,
+  const onClearHistory = () => {
+    showConfirm({
+      variant: 'destructive',
+      icon: '🗑️',
+      title: t('chat.clearHistoryTitle'),
+      message: t('chat.clearHistoryDesc'),
+      confirmLabel: t('chat.clearHistoryConfirm'),
+      onConfirm: () => {
+        clearMutation.mutate(undefined, {
+          onSuccess: () =>
+            showToast({
+              type: 'success',
+              title: t('common.success'),
+              message: t('chat.historyCleared'),
+            }),
+        });
       },
-      {
-        onSuccess: () =>
-          showToast({
-            type: 'success',
-            title: t('chat.savedTitle'),
-            message: t('chat.savedDesc'),
-          }),
-        onError: (e) => {
-          const msg =
-            (e as { response?: { data?: { message?: string } } }).response?.data?.message ??
-            t('addExpense.saveFailed');
-          showToast({ type: 'error', title: t('common.error'), message: msg });
-        },
-      },
-    );
+    });
   };
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F2F7] dark:bg-black" edges={['top']}>
       <CompactHeader
         title={t('chat.title')}
-        subtitle={
-          sendMutation.isPending ? t('chat.typing') : t('chat.subtitle')
-        }
-        isTyping={sendMutation.isPending}
+        subtitle={t('chat.maintenanceStatus')}
+        isTyping={false}
+        onClearHistory={conversationId ? onClearHistory : undefined}
+        clearPending={clearMutation.isPending}
       />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={90}
-        className="flex-1"
-      >
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 12 }}
-          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-          showsVerticalScrollIndicator={false}
-        >
-          {convQuery.isLoading || messagesQuery.isLoading ? (
-            <LoadingSpinner size="large" className="mt-10" />
-          ) : messages.length === 0 ? (
-            <EmptyState
-              title={t('chat.hiTitle')}
-              desc={t('chat.hiDesc')}
-              onQuickAction={(text) => send(text)}
-              t={t}
-            />
-          ) : (
-            messages.map((m, idx) => {
-              const action = extractAction(m.metadata);
-              const isUser = m.role === 'user';
-              const prev = messages[idx - 1];
-              const showAvatar = !isUser && (!prev || prev.role !== 'assistant');
-
-              return (
-                <Animated.View
-                  key={m.id}
-                  entering={FadeInUp.delay(Math.min(idx, 3) * 30).duration(280)}
-                  className="mb-2"
-                >
-                  {isUser ? (
-                    <View className="items-end">
-                      <View className="max-w-[80%] rounded-[20px] rounded-br-[6px] bg-[#007AFF] px-[14px] py-[10px]">
-                        <Text className="text-[15px] leading-[21px] text-white">
-                          {stripJsonBlock(m.content) || '…'}
-                        </Text>
-                      </View>
-                      <Text className="mr-1 mt-1 text-[10px] text-[#8E8E93]">
-                        {formatTime(m.createdAt ?? '')}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View className="flex-row items-start">
-                      <View style={{ width: 34 }}>
-                        {showAvatar ? <BotAvatar size={30} /> : null}
-                      </View>
-                      <View className="ml-2 flex-1">
-                        {showAvatar ? (
-                          <Text className="mb-1 ml-1 text-[11px] font-semibold text-[#8E8E93]">
-                            SalaryBot
-                          </Text>
-                        ) : null}
-                        <View
-                          className="max-w-[90%] self-start rounded-[20px] rounded-tl-[6px] bg-white px-[14px] py-[10px] dark:bg-[#1C1C1E]"
-                          style={{
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.05,
-                            shadowRadius: 4,
-                            elevation: 1,
-                          }}
-                        >
-                          <Text className="text-[15px] leading-[21px] text-black dark:text-white">
-                            {stripJsonBlock(m.content) || '…'}
-                          </Text>
-                        </View>
-                        {action ? (
-                          <ConfirmExpenseCard
-                            action={action}
-                            pending={createExpense.isPending}
-                            onConfirm={() => confirmExpense(action)}
-                            t={t}
-                          />
-                        ) : null}
-                        <Text className="ml-1 mt-1 text-[10px] text-[#8E8E93]">
-                          {formatTime(m.createdAt ?? '')}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                </Animated.View>
-              );
-            })
-          )}
-
-          {sendMutation.isPending ? (
-            <Animated.View
-              entering={FadeIn.duration(200)}
-              className="mb-2 flex-row items-start"
-            >
-              <View style={{ width: 34 }}>
-                <BotAvatar size={30} />
-              </View>
-              <View
-                className="ml-2 mt-[18px] self-start rounded-[20px] rounded-tl-[6px] bg-white px-[16px] py-[14px] dark:bg-[#1C1C1E]"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 4,
-                  elevation: 1,
-                }}
-              >
-                <TypingDots />
-              </View>
-            </Animated.View>
-          ) : null}
-        </ScrollView>
-
-        {/* Suggestion chips (only when chat has messages) */}
-        {messages.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: 14,
-              paddingTop: 10,
-              paddingBottom: 32,
-              gap: 10,
-            }}
-          >
-            {QUICK_ACTIONS.map((q) => (
-              <Pressable
-                key={q.key}
-                onPress={() => send(q.text)}
-                className="flex-row items-center rounded-full pl-[6px] pr-[16px] active:opacity-80"
-                style={{
-                  height: 44,
-                  backgroundColor: `${q.accent}14`,
-                }}
-              >
-                <View
-                  className="h-[32px] w-[32px] items-center justify-center rounded-full"
-                  style={{ backgroundColor: `${q.accent}26` }}
-                >
-                  <Text style={{ fontSize: 17 }}>{q.icon}</Text>
-                </View>
-                <Text
-                  className="ml-[10px] text-[14px] font-semibold"
-                  style={{ color: q.accent }}
-                >
-                  {t(`chat.${q.key}`)}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        ) : null}
-
-        {/* Input bar */}
-        <View
-          className="mx-3 mb-2 flex-row items-center gap-2 rounded-[26px] bg-white px-[6px] py-[6px] dark:bg-[#1C1C1E]"
-          style={{
-            marginBottom: Platform.OS === 'ios' ? 8 : 80,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 14,
-            elevation: 6,
-          }}
-        >
-          <View className="h-[36px] w-[36px] items-center justify-center rounded-full bg-[#F2F2F7] dark:bg-[#2C2C2E]">
-            <Text className="text-[18px] text-[#8E8E93]">＋</Text>
-          </View>
-          <View className="flex-1 justify-center px-[4px]">
-            <TextInput
-              value={input}
-              onChangeText={setInput}
-              placeholder={t('chat.askPlaceholder')}
-              placeholderTextColor="#8E8E93"
-              className="text-[15px] text-black dark:text-white"
-              returnKeyType="send"
-              onSubmitEditing={() => send()}
-              multiline
-              style={{ maxHeight: 96, minHeight: 24, paddingTop: 0, paddingBottom: 0 }}
-            />
-          </View>
-          <SendButton
-            active={!!input.trim() && !sendMutation.isPending}
-            onPress={() => send()}
-          />
-        </View>
-      </KeyboardAvoidingView>
+      <MaintenanceBanner />
     </SafeAreaView>
+  );
+}
+
+function MaintenanceBanner() {
+  const { t } = useTranslation();
+
+  const spin = useSharedValue(0);
+  const float = useSharedValue(0);
+
+  useEffect(() => {
+    spin.value = withRepeat(
+      withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+    float.value = withRepeat(
+      withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+  }, [spin, float]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -float.value * 8 },
+    ],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: 0.15 + float.value * 0.12,
+    transform: [{ scale: 1 + float.value * 0.12 }],
+  }));
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+      {/* Animated icon */}
+      <View style={{ alignItems: 'center', justifyContent: 'center', width: 120, height: 120 }}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              position: 'absolute',
+              width: 110,
+              height: 110,
+              borderRadius: 55,
+              backgroundColor: '#FF9500',
+            },
+            glowStyle,
+          ]}
+        />
+        <Animated.View
+          style={[
+            {
+              width: 88,
+              height: 88,
+              borderRadius: 44,
+              backgroundColor: '#FF9500',
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: '#FF9500',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.35,
+              shadowRadius: 16,
+              elevation: 10,
+            },
+            iconStyle,
+          ]}
+        >
+          <Text style={{ fontSize: 40 }}>🛠️</Text>
+        </Animated.View>
+      </View>
+
+      {/* Title */}
+      <Text
+        style={{
+          marginTop: 28,
+          fontSize: 22,
+          fontWeight: '700',
+          color: '#000',
+          textAlign: 'center',
+        }}
+        className="dark:text-white"
+      >
+        {t('chat.maintenanceTitle')}
+      </Text>
+
+      {/* Description */}
+      <Text
+        style={{
+          marginTop: 10,
+          fontSize: 15,
+          lineHeight: 22,
+          color: '#8E8E93',
+          textAlign: 'center',
+        }}
+      >
+        {t('chat.maintenanceDesc')}
+      </Text>
+
+      {/* Status chip */}
+      <View
+        style={{
+          marginTop: 28,
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#FF950018',
+          borderRadius: 20,
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          gap: 6,
+        }}
+      >
+        <View
+          style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#FF9500' }}
+        />
+        <Text style={{ fontSize: 13, fontWeight: '600', color: '#FF9500' }}>
+          {t('chat.maintenanceChip')}
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -323,10 +233,14 @@ function CompactHeader({
   title,
   subtitle,
   isTyping,
+  onClearHistory,
+  clearPending,
 }: {
   title: string;
   subtitle: string;
   isTyping: boolean;
+  onClearHistory?: () => void;
+  clearPending?: boolean;
 }) {
   const pulse = useSharedValue(0);
 
@@ -389,6 +303,26 @@ function CompactHeader({
           <Text className="text-[12px] text-[#8E8E93]">{subtitle}</Text>
         </View>
       </View>
+
+      {/* Clear history button */}
+      {onClearHistory ? (
+        <Pressable
+          onPress={clearPending ? undefined : onClearHistory}
+          hitSlop={12}
+          style={({ pressed }) => ({
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: pressed ? '#FFE5E5' : '#F2F2F7',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: clearPending ? 0.5 : 1,
+          })}
+          className="dark:bg-[#2C2C2E]"
+        >
+          <Text style={{ fontSize: 17 }}>🗑️</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

@@ -1,5 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -124,22 +130,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const onResetPin = () => {
-    showConfirm({
-      variant: 'destructive',
-      icon: '🔒',
-      title: t('profile.resetPinTitle'),
-      message: t('profile.resetPinDesc'),
-      onConfirm: () => {
-        clearPin();
-        showToast({
-          type: 'success',
-          title: t('common.success'),
-          message: t('profile.pinResetDone'),
-        });
-      },
-    });
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F2F7] dark:bg-black">
@@ -244,8 +234,8 @@ export default function ProfileScreen() {
             emoji="🔒"
             color="#34C759"
             label={t('profile.pinCode')}
-            value={hasPin ? t('profile.pinReset') : t('profile.pinSet')}
-            onPress={hasPin ? onResetPin : () => clearPin()}
+            value={hasPin ? t('profile.pinChange') : t('profile.pinSet')}
+            onPress={() => setPinModal(true)}
             isLast
           />
         </View>
@@ -287,16 +277,24 @@ export default function ProfileScreen() {
         <View className="mx-4 mt-8">
           <Pressable
             onPress={onLogout}
-            className="items-center rounded-[16px] bg-white py-[15px] active:opacity-70 dark:bg-[#1C1C1E]"
+            className="active:opacity-80"
             style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: 0.08,
-              shadowRadius: 10,
-              elevation: 3,
+              borderRadius: 16,
+              backgroundColor: '#FF3B30',
+              paddingVertical: 15,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              shadowColor: '#FF3B30',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.35,
+              shadowRadius: 14,
+              elevation: 8,
             }}
           >
-            <Text className="text-[16px] font-semibold text-[#FF3B30]">
+            <Text style={{ fontSize: 18, color: '#fff' }}>↩</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.2 }}>
               {t('profile.signOut')}
             </Text>
           </Pressable>
@@ -307,6 +305,12 @@ export default function ProfileScreen() {
           SalaryNet v{Constants.expoConfig?.version ?? '1.0.0'}
         </Text>
       </ScrollView>
+
+      {/* Change / Set PIN sheet */}
+      <ChangePinSheet
+        visible={pinModal}
+        onClose={() => setPinModal(false)}
+      />
 
       {/* Change Password Modal */}
       <ChangePasswordModal
@@ -421,6 +425,188 @@ export default function ProfileScreen() {
         }}
       />
     </SafeAreaView>
+  );
+}
+
+function ChangePinSheet({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const { hasPin, verifyPin, setPin } = usePinStore();
+  const showToast = useUIStore((s) => s.showToast);
+
+  type Step = 'verify' | 'create' | 'confirm';
+  const [step, setStep] = useState<Step>('create');
+  const [digits, setDigits] = useState<string[]>([]);
+  const [firstPin, setFirstPin] = useState('');
+  const [error, setError] = useState('');
+
+  const shakeX = useSharedValue(0);
+  const shakeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeX.value }],
+  }));
+
+  const shake = () => {
+    shakeX.value = withSequence(
+      withTiming(-10, { duration: 50 }),
+      withTiming(10, { duration: 50 }),
+      withTiming(-7, { duration: 50 }),
+      withTiming(7, { duration: 50 }),
+      withTiming(0, { duration: 50 }),
+    );
+  };
+
+  useEffect(() => {
+    if (visible) {
+      setStep(hasPin ? 'verify' : 'create');
+      setDigits([]);
+      setFirstPin('');
+      setError('');
+    }
+  }, [visible, hasPin]);
+
+  const handleDigit = (d: string) => {
+    if (digits.length >= 4) return;
+    const next = [...digits, d];
+    setDigits(next);
+    setError('');
+
+    if (next.length === 4) {
+      const pin = next.join('');
+
+      if (step === 'verify') {
+        const ok = verifyPin(pin);
+        if (ok) {
+          setStep('create');
+          setDigits([]);
+        } else {
+          shake();
+          setError(t('pin.wrong'));
+          setTimeout(() => setDigits([]), 500);
+        }
+      } else if (step === 'create') {
+        setFirstPin(pin);
+        setStep('confirm');
+        setDigits([]);
+      } else {
+        if (pin === firstPin) {
+          setPin(pin);
+          onClose();
+          showToast({
+            type: 'success',
+            title: t('common.success'),
+            message: t('profile.pinChanged'),
+          });
+        } else {
+          shake();
+          setError(t('pin.mismatch'));
+          setTimeout(() => {
+            setDigits([]);
+            setStep('create');
+            setFirstPin('');
+          }, 600);
+        }
+      }
+    }
+  };
+
+  const handleDelete = () => {
+    setDigits((prev) => prev.slice(0, -1));
+    setError('');
+  };
+
+  const title =
+    step === 'verify'
+      ? t('pin.enterCurrentTitle')
+      : step === 'create'
+        ? t('pin.createTitle')
+        : t('pin.confirmTitle');
+
+  return (
+    <BottomSheet visible={visible} onClose={onClose}>
+      <View className="mb-2 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+      <Text className="text-center text-[20px] font-bold text-black dark:text-white">
+        {t('profile.pinCode')}
+      </Text>
+      <Text className="mt-1 text-center text-[14px] text-[#8E8E93]">{title}</Text>
+
+      {/* PIN dots */}
+      <Animated.View
+        style={[{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }, shakeStyle]}
+      >
+        {Array.from({ length: 4 }).map((_, i) => (
+          <View
+            key={i}
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 7,
+              backgroundColor: i < digits.length ? '#007AFF' : '#E5E5EA',
+              marginHorizontal: 9,
+            }}
+          />
+        ))}
+      </Animated.View>
+
+      {/* Error */}
+      <View style={{ height: 22, justifyContent: 'center', marginTop: 6 }}>
+        {error ? (
+          <Text className="text-center text-[13px] text-[#FF3B30]">{error}</Text>
+        ) : null}
+      </View>
+
+      {/* Numpad */}
+      <View style={{ alignItems: 'center', marginTop: 8 }}>
+        {[[1, 2, 3], [4, 5, 6], [7, 8, 9]].map((row, ri) => (
+          <View key={ri} style={{ flexDirection: 'row' }}>
+            {row.map((n) => (
+              <Pressable
+                key={n}
+                onPress={() => handleDigit(String(n))}
+                style={({ pressed }) => ({
+                  width: 72,
+                  height: 72,
+                  borderRadius: 36,
+                  backgroundColor: pressed ? '#D6E4FF' : '#EDF2FA',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: 6,
+                })}
+              >
+                <Text style={{ fontSize: 24, fontWeight: '500', color: '#007AFF' }}>{n}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ))}
+        <View style={{ flexDirection: 'row' }}>
+          <View style={{ width: 72, height: 72, margin: 6 }} />
+          <Pressable
+            onPress={() => handleDigit('0')}
+            style={({ pressed }) => ({
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: pressed ? '#D6E4FF' : '#EDF2FA',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: 6,
+            })}
+          >
+            <Text style={{ fontSize: 24, fontWeight: '500', color: '#007AFF' }}>0</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleDelete}
+            style={{ width: 72, height: 72, margin: 6, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 22, color: '#007AFF' }}>⌫</Text>
+          </Pressable>
+        </View>
+      </View>
+    </BottomSheet>
   );
 }
 

@@ -141,7 +141,15 @@
     "quickHowMuch": "How much today?",
     "quickMonthly": "Monthly summary",
     "quickSavingTips": "Saving tips",
-    "quickAddExample": "Add 50000 lunch"
+    "quickAddExample": "Add 50000 lunch",
+    "maintenanceTitle": "Технический перерыв",
+    "maintenanceDesc": "SalaryBot is temporarily unavailable. We are working on it and will be back very soon!",
+    "maintenanceStatus": "Temporarily unavailable",
+    "maintenanceChip": "Under maintenance",
+    "clearHistoryTitle": "Clear history",
+    "clearHistoryDesc": "All chat messages will be permanently deleted.",
+    "clearHistoryConfirm": "Clear",
+    "historyCleared": "Chat history cleared"
   },
   "profile": {
     "preferences": "Preferences",
@@ -166,7 +174,9 @@
     "passwordChanged": "Password changed successfully",
     "pinCode": "PIN code",
     "pinSet": "Set up",
+    "pinChange": "Change",
     "pinReset": "Reset",
+    "pinChanged": "PIN code changed successfully",
     "resetPinTitle": "Reset PIN?",
     "resetPinDesc": "You will need to set a new PIN next time you open the app.",
     "pinResetDone": "PIN has been reset",
@@ -197,10 +207,14 @@
   "pin": {
     "createTitle": "Create PIN code",
     "confirmTitle": "Confirm PIN code",
-    "enterTitle": "Enter PIN code",
+    "enterTitle": "Enter your PIN",
+    "enterCurrentTitle": "Enter current PIN code",
+    "createSubtitle": "Choose a 4-digit PIN to secure your account",
+    "confirmSubtitle": "Re-enter your PIN to confirm",
+    "enterSubtitle": "Use PIN / Touch ID",
     "wrong": "Wrong PIN code",
     "mismatch": "PINs don't match. Try again.",
-    "forget": "Forgot code",
+    "forget": "Forget PIN",
     "forgetTitle": "Forgot PIN?",
     "forgetDesc": "You will be signed out. You can set a new PIN after signing in again."
   },

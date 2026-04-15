@@ -141,7 +141,11 @@
     "quickHowMuch": "كم أنفقت اليوم؟",
     "quickMonthly": "ملخص شهري",
     "quickSavingTips": "نصائح توفير",
-    "quickAddExample": "أضف 50000 غداء"
+    "quickAddExample": "أضف 50000 غداء",
+    "maintenanceTitle": "استراحة تقنية",
+    "maintenanceDesc": "SalaryBot غير متاح مؤقتاً. نعمل على تحسينه وسنعود قريباً!",
+    "maintenanceStatus": "غير متاح مؤقتاً",
+    "maintenanceChip": "تحت الصيانة"
   },
   "profile": {
     "preferences": "التفضيلات",
@@ -166,7 +170,9 @@
     "passwordChanged": "تم تغيير كلمة المرور",
     "pinCode": "رمز PIN",
     "pinSet": "تعيين",
+    "pinChange": "تغيير",
     "pinReset": "إعادة تعيين",
+    "pinChanged": "تم تغيير رمز PIN بنجاح",
     "resetPinTitle": "إعادة تعيين PIN؟",
     "resetPinDesc": "ستحتاج إلى تعيين PIN جديد في المرة القادمة.",
     "pinResetDone": "تم إعادة تعيين PIN",
@@ -218,6 +224,10 @@
     "createTitle": "إنشاء رمز PIN",
     "confirmTitle": "تأكيد رمز PIN",
     "enterTitle": "أدخل رمز PIN",
+    "enterCurrentTitle": "أدخل رمز PIN الحالي",
+    "createSubtitle": "اختر رمز PIN مكوّن من 4 أرقام",
+    "confirmSubtitle": "أعد إدخال رمز PIN للتأكيد",
+    "enterSubtitle": "استخدم PIN / Touch ID",
     "wrong": "رمز PIN خاطئ",
     "mismatch": "الرمزان غير متطابقين. حاول مرة أخرى.",
     "forget": "نسيت الرمز",

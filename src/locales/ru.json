@@ -141,7 +141,15 @@
     "quickHowMuch": "Сколько сегодня?",
     "quickMonthly": "Месячная сводка",
     "quickSavingTips": "Советы по экономии",
-    "quickAddExample": "Добавь обед 50000"
+    "quickAddExample": "Добавь обед 50000",
+    "maintenanceTitle": "Технический перерыв",
+    "maintenanceDesc": "SalaryBot временно недоступен. Мы работаем над ним и скоро вернёмся!",
+    "maintenanceStatus": "Временно недоступен",
+    "maintenanceChip": "Техническое обслуживание",
+    "clearHistoryTitle": "Очистить историю",
+    "clearHistoryDesc": "Все сообщения чата будут удалены без возможности восстановления.",
+    "clearHistoryConfirm": "Очистить",
+    "historyCleared": "История чата очищена"
   },
   "profile": {
     "preferences": "Настройки",
@@ -166,7 +174,9 @@
     "passwordChanged": "Пароль успешно изменён",
     "pinCode": "PIN-код",
     "pinSet": "Установить",
+    "pinChange": "Изменить",
     "pinReset": "Сбросить",
+    "pinChanged": "PIN-код успешно изменён",
     "resetPinTitle": "Сбросить PIN?",
     "resetPinDesc": "Вам нужно будет задать новый PIN при следующем открытии.",
     "pinResetDone": "PIN-код сброшен",
@@ -217,10 +227,14 @@
   "pin": {
     "createTitle": "Создайте PIN-код",
     "confirmTitle": "Подтвердите PIN-код",
-    "enterTitle": "Введите PIN-код",
+    "enterTitle": "Введите ваш PIN",
+    "enterCurrentTitle": "Введите текущий PIN-код",
+    "createSubtitle": "Выберите 4-значный PIN для защиты аккаунта",
+    "confirmSubtitle": "Введите PIN ещё раз для подтверждения",
+    "enterSubtitle": "Используйте PIN / Touch ID",
     "wrong": "Неверный PIN-код",
     "mismatch": "PIN-коды не совпадают. Попробуйте снова.",
-    "forget": "Забыли код",
+    "forget": "Забыли PIN",
     "forgetTitle": "Забыли PIN?",
     "forgetDesc": "Вы выйдете из аккаунта. Новый PIN можно задать после повторного входа."
   }

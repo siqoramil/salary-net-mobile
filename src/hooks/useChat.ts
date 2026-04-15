@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { chatApi } from '../services/chat.service';
 import { expenseKeys } from './useExpenses';
 
+
 export const chatKeys = {
   all: ['chat'] as const,
   latest: ['chat', 'latest'] as const,
@@ -34,6 +35,19 @@ export function useSendMessage(conversationId: string | undefined) {
       if (!conversationId) return;
       void qc.invalidateQueries({ queryKey: chatKeys.messages(conversationId) });
       void qc.invalidateQueries({ queryKey: expenseKeys.all });
+    },
+  });
+}
+
+export function useClearHistory(conversationId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => {
+      if (!conversationId) throw new Error('No conversation');
+      return chatApi.deleteConversation(conversationId);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: chatKeys.all });
     },
   });
 }

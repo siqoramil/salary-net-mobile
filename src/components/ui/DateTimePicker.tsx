@@ -112,6 +112,7 @@ interface Props {
   onCancel: () => void;
   confirmLabel?: string;
   cancelLabel?: string;
+  dateOnly?: boolean;
 }
 
 function getDaysInMonth(year: number, month: number) {
@@ -135,6 +136,7 @@ export function DateTimePicker({
   onCancel,
   confirmLabel = 'Done',
   cancelLabel = 'Cancel',
+  dateOnly = false,
 }: Props) {
   const isDark = useColorScheme() === 'dark';
   const [viewYear, setViewYear] = useState(value.getFullYear());
@@ -190,7 +192,9 @@ export function DateTimePicker({
   };
 
   const handleConfirm = () => {
-    const result = new Date(viewYear, viewMonth, selectedDay, hour, minute);
+    const result = dateOnly
+      ? new Date(viewYear, viewMonth, selectedDay, 0, 0, 0)
+      : new Date(viewYear, viewMonth, selectedDay, hour, minute);
     onConfirm(result);
   };
 
@@ -310,87 +314,89 @@ export function DateTimePicker({
             ))}
           </View>
 
-          {/* Time picker */}
-          <View
-            style={{
-              paddingTop: 8,
-              paddingBottom: 12,
-              paddingHorizontal: 16,
-              borderTopWidth: 1,
-              borderTopColor: isDark ? '#38383A' : '#E5E5EA',
-            }}
-          >
-            {/* Header: "Time" left, value chip right */}
+          {/* Time picker — hidden when dateOnly */}
+          {!dateOnly ? (
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 4,
+                paddingTop: 8,
+                paddingBottom: 12,
+                paddingHorizontal: 16,
+                borderTopWidth: 1,
+                borderTopColor: isDark ? '#38383A' : '#E5E5EA',
               }}
             >
-              <Text style={{ fontSize: 15, color: textColor }}>Time</Text>
-              <View
-                style={{
-                  backgroundColor: cellBg,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 8,
-                }}
-              >
-                <Text style={{ fontSize: 15, fontWeight: '500', color: '#007AFF' }}>
-                  {formatTime12(hour, minute)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Wheels with center highlight band */}
-            <View style={{ height: WHEEL_HEIGHT, position: 'relative' }}>
-              <View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: (WHEEL_HEIGHT - ITEM_HEIGHT) / 2,
-                  height: ITEM_HEIGHT,
-                  borderRadius: 10,
-                  backgroundColor: cellBg,
-                }}
-              />
+              {/* Header: "Time" left, value chip right */}
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  height: WHEEL_HEIGHT,
+                  justifyContent: 'space-between',
+                  marginBottom: 4,
                 }}
               >
-                <Wheel
-                  data={hourItems}
-                  value={hour12Index}
-                  onChange={setHourFromWheel}
-                  textColor={textColor}
-                  width={56}
+                <Text style={{ fontSize: 15, color: textColor }}>Time</Text>
+                <View
+                  style={{
+                    backgroundColor: cellBg,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '500', color: '#007AFF' }}>
+                    {formatTime12(hour, minute)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Wheels with center highlight band */}
+              <View style={{ height: WHEEL_HEIGHT, position: 'relative' }}>
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    top: (WHEEL_HEIGHT - ITEM_HEIGHT) / 2,
+                    height: ITEM_HEIGHT,
+                    borderRadius: 10,
+                    backgroundColor: cellBg,
+                  }}
                 />
-                <Wheel
-                  data={minuteItems}
-                  value={minute}
-                  onChange={setMinute}
-                  textColor={textColor}
-                  width={56}
-                />
-                <Wheel
-                  data={periodItems}
-                  value={periodIndex}
-                  onChange={setPeriodFromWheel}
-                  textColor={textColor}
-                  width={60}
-                  align="flex-start"
-                />
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: WHEEL_HEIGHT,
+                  }}
+                >
+                  <Wheel
+                    data={hourItems}
+                    value={hour12Index}
+                    onChange={setHourFromWheel}
+                    textColor={textColor}
+                    width={56}
+                  />
+                  <Wheel
+                    data={minuteItems}
+                    value={minute}
+                    onChange={setMinute}
+                    textColor={textColor}
+                    width={56}
+                  />
+                  <Wheel
+                    data={periodItems}
+                    value={periodIndex}
+                    onChange={setPeriodFromWheel}
+                    textColor={textColor}
+                    width={60}
+                    align="flex-start"
+                  />
+                </View>
               </View>
             </View>
-          </View>
+          ) : null}
 
           {/* Actions */}
           <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: isDark ? '#38383A' : '#E5E5EA' }}>

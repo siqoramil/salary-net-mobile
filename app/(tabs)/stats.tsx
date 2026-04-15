@@ -237,12 +237,7 @@ export default function StatsScreen() {
             </Text>
             <Text className="mt-1 text-[14px] text-[#8E8E93]">
               {pickedDate
-                ? pickedDate.toLocaleDateString(i18n.language, {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })
+                ? `${String(pickedDate.getDate()).padStart(2, '0')}.${String(pickedDate.getMonth() + 1).padStart(2, '0')}.${pickedDate.getFullYear()}`
                 : formatDateRange(range.from, range.to, period, i18n.language)}
             </Text>
           </View>
@@ -607,6 +602,7 @@ export default function StatsScreen() {
         onCancel={() => setCalendarOpen(false)}
         confirmLabel={t('common.confirm')}
         cancelLabel={t('common.cancel')}
+        dateOnly
       />
     </SafeAreaView>
   );

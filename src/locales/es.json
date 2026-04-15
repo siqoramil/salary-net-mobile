@@ -141,7 +141,11 @@
     "quickHowMuch": "¿Cuánto hoy?",
     "quickMonthly": "Resumen mensual",
     "quickSavingTips": "Consejos de ahorro",
-    "quickAddExample": "Agregar 50000 almuerzo"
+    "quickAddExample": "Agregar 50000 almuerzo",
+    "maintenanceTitle": "Pausa técnica",
+    "maintenanceDesc": "SalaryBot no está disponible temporalmente. ¡Estamos trabajando en ello y volveremos pronto!",
+    "maintenanceStatus": "No disponible temporalmente",
+    "maintenanceChip": "En mantenimiento"
   },
   "profile": {
     "preferences": "Preferencias",
@@ -166,7 +170,9 @@
     "passwordChanged": "Contraseña cambiada",
     "pinCode": "Código PIN",
     "pinSet": "Configurar",
+    "pinChange": "Cambiar",
     "pinReset": "Restablecer",
+    "pinChanged": "Código PIN cambiado con éxito",
     "resetPinTitle": "¿Restablecer PIN?",
     "resetPinDesc": "Deberás configurar un nuevo PIN la próxima vez.",
     "pinResetDone": "PIN restablecido",
@@ -217,7 +223,11 @@
   "pin": {
     "createTitle": "Crear código PIN",
     "confirmTitle": "Confirmar código PIN",
-    "enterTitle": "Ingresa el código PIN",
+    "enterTitle": "Ingresa tu PIN",
+    "enterCurrentTitle": "Ingresa el código PIN actual",
+    "createSubtitle": "Elige un PIN de 4 dígitos para proteger tu cuenta",
+    "confirmSubtitle": "Vuelve a ingresar tu PIN para confirmar",
+    "enterSubtitle": "Usa PIN / Touch ID",
     "wrong": "Código PIN incorrecto",
     "mismatch": "Los códigos PIN no coinciden. Inténtalo de nuevo.",
     "forget": "Olvidé el código",
