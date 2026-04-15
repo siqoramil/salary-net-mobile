@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "SalaryNet",
+    "appName": "Salary Net",
     "save": "Сохранить",
     "cancel": "Отмена",
     "delete": "Удалить",
@@ -205,7 +205,7 @@
     "emailChangeConfirmed": "Email обновлён"
   },
   "biometric": {
-    "unlockPrompt": "Разблокировать SalaryNet",
+    "unlockPrompt": "Разблокировать Salary Net",
     "locked": "Заблокировано",
     "unlockDesc": "Используйте биометрию для разблокировки",
     "unlock": "Разблокировать"

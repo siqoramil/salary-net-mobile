@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "SalaryNet",
+    "appName": "Salary Net",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -219,7 +219,7 @@
     "forgetDesc": "You will be signed out. You can set a new PIN after signing in again."
   },
   "biometric": {
-    "unlockPrompt": "Unlock SalaryNet",
+    "unlockPrompt": "Unlock Salary Net",
     "locked": "Locked",
     "unlockDesc": "Use biometric to unlock your finances",
     "unlock": "Unlock"

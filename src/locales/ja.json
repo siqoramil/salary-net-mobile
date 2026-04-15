@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "SalaryNet",
+    "appName": "Salary Net",
     "save": "保存",
     "cancel": "キャンセル",
     "delete": "削除",
@@ -215,7 +215,7 @@
     "other": "その他"
   },
   "biometric": {
-    "unlockPrompt": "SalaryNet のロックを解除",
+    "unlockPrompt": "Salary Net のロックを解除",
     "locked": "ロック中",
     "unlockDesc": "生体認証でロックを解除",
     "unlock": "ロック解除"

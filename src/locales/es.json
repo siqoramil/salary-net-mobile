@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "SalaryNet",
+    "appName": "Salary Net",
     "save": "Guardar",
     "cancel": "Cancelar",
     "delete": "Eliminar",
@@ -215,7 +215,7 @@
     "other": "Otro"
   },
   "biometric": {
-    "unlockPrompt": "Desbloquear SalaryNet",
+    "unlockPrompt": "Desbloquear Salary Net",
     "locked": "Bloqueado",
     "unlockDesc": "Usa biometría para desbloquear",
     "unlock": "Desbloquear"

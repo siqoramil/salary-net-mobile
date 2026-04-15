@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "SalaryNet",
+    "appName": "Salary Net",
     "save": "حفظ",
     "cancel": "إلغاء",
     "delete": "حذف",
@@ -215,7 +215,7 @@
     "other": "أخرى"
   },
   "biometric": {
-    "unlockPrompt": "فتح SalaryNet",
+    "unlockPrompt": "فتح Salary Net",
     "locked": "مقفل",
     "unlockDesc": "استخدم البصمة لفتح التطبيق",
     "unlock": "فتح"

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "SalaryNet",
+    "appName": "Salary Net",
     "save": "保存",
     "cancel": "取消",
     "delete": "删除",
@@ -215,7 +215,7 @@
     "other": "其他"
   },
   "biometric": {
-    "unlockPrompt": "解锁 SalaryNet",
+    "unlockPrompt": "解锁 Salary Net",
     "locked": "已锁定",
     "unlockDesc": "使用生物识别解锁",
     "unlock": "解锁"
