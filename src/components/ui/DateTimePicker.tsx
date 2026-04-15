@@ -1,5 +1,107 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Modal, Pressable, Text, TextInput, View, useColorScheme } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  FlatList,
+  Modal,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  Text,
+  View,
+  useColorScheme,
+} from 'react-native';
+
+const ITEM_HEIGHT = 36;
+const VISIBLE_ITEMS = 5;
+const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
+const CENTER_OFFSET = Math.floor(VISIBLE_ITEMS / 2);
+
+interface WheelProps {
+  data: string[];
+  value: number;
+  onChange: (index: number) => void;
+  textColor: string;
+  width: number;
+  align?: 'center' | 'flex-start';
+}
+
+function Wheel({ data, value, onChange, textColor, width, align = 'center' }: WheelProps) {
+  const listRef = useRef<FlatList<string>>(null);
+  const lastIndex = useRef(value);
+
+  useEffect(() => {
+    if (lastIndex.current !== value) {
+      lastIndex.current = value;
+      listRef.current?.scrollToOffset({ offset: value * ITEM_HEIGHT, animated: true });
+    }
+  }, [value]);
+
+  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+    const clamped = Math.max(0, Math.min(data.length - 1, idx));
+    if (clamped !== lastIndex.current) {
+      lastIndex.current = clamped;
+      onChange(clamped);
+    }
+  };
+
+  return (
+    <View style={{ height: WHEEL_HEIGHT, width }}>
+      <FlatList
+        ref={listRef}
+        data={data}
+        keyExtractor={(item, idx) => `${idx}-${item}`}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ITEM_HEIGHT}
+        decelerationRate="fast"
+        initialScrollIndex={value}
+        getItemLayout={(_, index) => ({
+          length: ITEM_HEIGHT,
+          offset: ITEM_HEIGHT * index,
+          index,
+        })}
+        contentContainerStyle={{ paddingVertical: ITEM_HEIGHT * CENTER_OFFSET }}
+        onMomentumScrollEnd={handleMomentumEnd}
+        renderItem={({ item, index }) => {
+          const distance = Math.abs(index - value);
+          let opacity = 1;
+          if (distance === 1) opacity = 0.45;
+          else if (distance === 2) opacity = 0.2;
+          else if (distance >= 3) opacity = 0.08;
+          const selected = distance === 0;
+          return (
+            <Pressable
+              onPress={() => onChange(index)}
+              style={{
+                height: ITEM_HEIGHT,
+                alignItems: align,
+                justifyContent: 'center',
+                paddingLeft: align === 'flex-start' ? 8 : 0,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: selected ? 24 : 22,
+                  fontWeight: selected ? '600' : '400',
+                  color: textColor,
+                  opacity,
+                  fontVariant: ['tabular-nums'],
+                }}
+              >
+                {item}
+              </Text>
+            </Pressable>
+          );
+        }}
+      />
+    </View>
+  );
+}
+
+function formatTime12(h: number, m: number) {
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+}
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
@@ -38,16 +140,16 @@ export function DateTimePicker({
   const [viewYear, setViewYear] = useState(value.getFullYear());
   const [viewMonth, setViewMonth] = useState(value.getMonth());
   const [selectedDay, setSelectedDay] = useState(value.getDate());
-  const [hour, setHour] = useState(String(value.getHours()).padStart(2, '0'));
-  const [minute, setMinute] = useState(String(value.getMinutes()).padStart(2, '0'));
+  const [hour, setHour] = useState(value.getHours());
+  const [minute, setMinute] = useState(value.getMinutes());
 
   // Reset state when modal opens with new value
   const resetToValue = useCallback((d: Date) => {
     setViewYear(d.getFullYear());
     setViewMonth(d.getMonth());
     setSelectedDay(d.getDate());
-    setHour(String(d.getHours()).padStart(2, '0'));
-    setMinute(String(d.getMinutes()).padStart(2, '0'));
+    setHour(d.getHours());
+    setMinute(d.getMinutes());
   }, []);
 
   // When visible changes, sync state
@@ -88,20 +190,33 @@ export function DateTimePicker({
   };
 
   const handleConfirm = () => {
-    const h = Math.min(23, Math.max(0, parseInt(hour, 10) || 0));
-    const m = Math.min(59, Math.max(0, parseInt(minute, 10) || 0));
-    const result = new Date(viewYear, viewMonth, selectedDay, h, m);
+    const result = new Date(viewYear, viewMonth, selectedDay, hour, minute);
     onConfirm(result);
   };
 
-  const handleHour = (v: string) => {
-    const clean = v.replace(/\D/g, '').slice(0, 2);
-    setHour(clean);
+  const hourItems = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => String(i + 1)),
+    [],
+  );
+  const minuteItems = useMemo(
+    () => Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')),
+    [],
+  );
+  const periodItems = useMemo(() => ['AM', 'PM'], []);
+
+  const hour12Index = (hour % 12 === 0 ? 12 : hour % 12) - 1;
+  const periodIndex = hour >= 12 ? 1 : 0;
+
+  const setHourFromWheel = (idx: number) => {
+    const h12 = idx + 1; // 1..12
+    const base = h12 === 12 ? 0 : h12;
+    setHour(base + periodIndex * 12);
   };
 
-  const handleMinute = (v: string) => {
-    const clean = v.replace(/\D/g, '').slice(0, 2);
-    setMinute(clean);
+  const setPeriodFromWheel = (idx: number) => {
+    const h12 = hour12Index + 1;
+    const base = h12 === 12 ? 0 : h12;
+    setHour(base + idx * 12);
   };
 
   const bg = isDark ? '#1C1C1E' : '#FFFFFF';
@@ -196,28 +311,84 @@ export function DateTimePicker({
           </View>
 
           {/* Time picker */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingBottom: 16, gap: 4 }}>
-            <Text style={{ fontSize: 13, color: mutedColor, marginRight: 8 }}>Time</Text>
-            <View style={{ backgroundColor: cellBg, borderRadius: 10, width: 48, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-              <TextInput
-                value={hour}
-                onChangeText={handleHour}
-                keyboardType="number-pad"
-                maxLength={2}
-                style={{ fontSize: 17, fontWeight: '600', color: textColor, textAlign: 'center', width: 48, height: 40 }}
-                selectTextOnFocus
-              />
+          <View
+            style={{
+              paddingTop: 8,
+              paddingBottom: 12,
+              paddingHorizontal: 16,
+              borderTopWidth: 1,
+              borderTopColor: isDark ? '#38383A' : '#E5E5EA',
+            }}
+          >
+            {/* Header: "Time" left, value chip right */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 4,
+              }}
+            >
+              <Text style={{ fontSize: 15, color: textColor }}>Time</Text>
+              <View
+                style={{
+                  backgroundColor: cellBg,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '500', color: '#007AFF' }}>
+                  {formatTime12(hour, minute)}
+                </Text>
+              </View>
             </View>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: textColor }}>:</Text>
-            <View style={{ backgroundColor: cellBg, borderRadius: 10, width: 48, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-              <TextInput
-                value={minute}
-                onChangeText={handleMinute}
-                keyboardType="number-pad"
-                maxLength={2}
-                style={{ fontSize: 17, fontWeight: '600', color: textColor, textAlign: 'center', width: 48, height: 40 }}
-                selectTextOnFocus
+
+            {/* Wheels with center highlight band */}
+            <View style={{ height: WHEEL_HEIGHT, position: 'relative' }}>
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: (WHEEL_HEIGHT - ITEM_HEIGHT) / 2,
+                  height: ITEM_HEIGHT,
+                  borderRadius: 10,
+                  backgroundColor: cellBg,
+                }}
               />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: WHEEL_HEIGHT,
+                }}
+              >
+                <Wheel
+                  data={hourItems}
+                  value={hour12Index}
+                  onChange={setHourFromWheel}
+                  textColor={textColor}
+                  width={56}
+                />
+                <Wheel
+                  data={minuteItems}
+                  value={minute}
+                  onChange={setMinute}
+                  textColor={textColor}
+                  width={56}
+                />
+                <Wheel
+                  data={periodItems}
+                  value={periodIndex}
+                  onChange={setPeriodFromWheel}
+                  textColor={textColor}
+                  width={60}
+                  align="flex-start"
+                />
+              </View>
             </View>
           </View>
 
