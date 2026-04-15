@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,7 +14,6 @@ import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useThemeStore, type ThemeMode } from '@/src/stores/themeStore';
 import { useLocaleStore, type Locale } from '@/src/stores/localeStore';
-import { usePinStore } from '@/src/stores/pinStore';
 import { useUIStore } from '@/src/stores/uiStore';
 import { authApi } from '@/src/services/auth.service';
 import { api } from '@/src/services/api';
@@ -46,14 +44,12 @@ const LANGUAGES: { code: Locale; flag: string; name: string; native: string }[] 
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
   const { user, refreshToken, clear, updateUser } = useAuthStore();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const themeMode = useThemeStore((s) => s.mode);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const locale = useLocaleStore((s) => s.locale);
   const setLocale = useLocaleStore((s) => s.setLocale);
-  const { hasPin, clearPin } = usePinStore();
   const showToast = useUIStore((s) => s.showToast);
   const showConfirm = useUIStore((s) => s.showConfirm);
   const queryClient = useQueryClient();
@@ -76,7 +72,6 @@ export default function ProfileScreen() {
         } catch {
           /* ignore */
         }
-        clearPin();
         clear();
         // Drop all cached queries so the next logged-in user never sees
         // stale expenses, profile, or chat data from the previous session.
@@ -223,14 +218,6 @@ export default function ProfileScreen() {
             color="#FF9500"
             label={t('profile.changePassword')}
             onPress={() => setPasswordModal(true)}
-          />
-          <RowDivider />
-          <SettingsRow
-            emoji="🔒"
-            color="#34C759"
-            label={t('profile.pinCode')}
-            value={hasPin ? t('profile.pinChange') : t('profile.pinSet')}
-            onPress={() => router.push('/change-pin')}
             isLast
           />
         </View>

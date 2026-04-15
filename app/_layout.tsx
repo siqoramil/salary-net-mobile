@@ -20,12 +20,10 @@ import { queryClient } from '../src/lib/queryClient';
 import { useAuthStore } from '../src/stores/authStore';
 import { useThemeStore } from '../src/stores/themeStore';
 import { useLocaleStore } from '../src/stores/localeStore';
-import { PinGate } from '../src/components/PinGate';
 import { LoadingSpinner } from '../src/components/ui/LoadingSpinner';
 import { ToastHost } from '../src/components/ui/ToastHost';
 import { ConfirmDialog } from '../src/components/ui/ConfirmDialog';
 import { AddExpenseSheet } from '../src/components/expense/AddExpenseSheet';
-import { usePinStore } from '../src/stores/pinStore';
 import { useUIStore } from '../src/stores/uiStore';
 import { hydrateStorage, storage, StorageKeys } from '../src/lib/storage';
 
@@ -73,7 +71,6 @@ function RootLayoutNav({ resolved }: { resolved: 'light' | 'dark' }) {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        <Stack.Screen name="change-pin" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
       <AddExpenseSheet visible={addExpenseOpen} onClose={closeAddExpense} />
       <ToastHost />
@@ -87,7 +84,6 @@ export default function RootLayout() {
   const [storageReady, setStorageReady] = useState(false);
   const hydrateTheme = useThemeStore((s) => s.hydrate);
   const resolved = useThemeStore((s) => s.resolved);
-  const hydratePin = usePinStore((s) => s.hydrate);
   const hydrateLocale = useLocaleStore((s) => s.hydrate);
   const locale = useLocaleStore((s) => s.locale);
   const { setColorScheme } = useNwColorScheme();
@@ -97,10 +93,9 @@ export default function RootLayout() {
       await hydrateStorage();
       hydrateLocale();
       hydrateTheme();
-      hydratePin();
       setStorageReady(true);
     })();
-  }, [hydrateTheme, hydrateLocale, hydratePin]);
+  }, [hydrateTheme, hydrateLocale]);
 
   useEffect(() => {
     setColorScheme(resolved);
@@ -125,9 +120,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <I18nextProvider i18n={i18n} key={locale}>
         <QueryClientProvider client={queryClient}>
-          <PinGate>
-            <RootLayoutNav resolved={resolved} />
-          </PinGate>
+          <RootLayoutNav resolved={resolved} />
         </QueryClientProvider>
       </I18nextProvider>
     </GestureHandlerRootView>
