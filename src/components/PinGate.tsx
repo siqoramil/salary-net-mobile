@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View, useColorScheme, useWindowDimensions } from 'react-native';
+import { Image, Pressable, Text, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Animated, {
   useAnimatedStyle,
@@ -238,6 +238,13 @@ export function PinGate({ children }: { children: React.ReactNode }) {
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
       <Animated.View style={[{ flex: 1, alignItems: 'center', justifyContent: 'center' }, fadeStyle]}>
+
+        {/* Logo */}
+        <Image
+          source={require('../../assets/images/icon.png')}
+          style={{ width: 72, height: 72, borderRadius: 16, marginBottom: 16 }}
+          resizeMode="contain"
+        />
 
         {/* Title */}
         <Text style={{
