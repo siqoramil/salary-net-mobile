@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
-  Alert,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -10,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import Constants from 'expo-constants';
 
 import { BottomSheet } from '@/src/components/ui/BottomSheet';
 import { Button } from '@/src/components/ui/Button';
@@ -31,6 +33,23 @@ const THEME_LABELS: Record<ThemeMode, string> = {
   dark: 'profile.themeDark',
 };
 
+const THEME_OPTIONS: { mode: ThemeMode; icon: string }[] = [
+  { mode: 'system', icon: '📱' },
+  { mode: 'light', icon: '☀️' },
+  { mode: 'dark', icon: '🌙' },
+];
+
+const LANGUAGES: { code: Locale; flag: string; name: string; native: string }[] = [
+  { code: 'en', flag: '🇬🇧', name: 'English', native: 'English' },
+  { code: 'ru', flag: '🇷🇺', name: 'Russian', native: 'Русский' },
+  { code: 'fr', flag: '🇫🇷', name: 'French', native: 'Français' },
+  { code: 'es', flag: '🇪🇸', name: 'Spanish', native: 'Español' },
+  { code: 'ar', flag: '🇸🇦', name: 'Arabic', native: 'العربية' },
+  { code: 'zh', flag: '🇨🇳', name: 'Chinese', native: '中文' },
+  { code: 'ko', flag: '🇰🇷', name: 'Korean', native: '한국어' },
+  { code: 'ja', flag: '🇯🇵', name: 'Japanese', native: '日本語' },
+];
+
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const { user, refreshToken, clear, updateUser } = useAuthStore();
@@ -41,26 +60,31 @@ export default function ProfileScreen() {
   const setLocale = useLocaleStore((s) => s.setLocale);
   const { hasPin, clearPin } = usePinStore();
   const showToast = useUIStore((s) => s.showToast);
+  const showConfirm = useUIStore((s) => s.showConfirm);
 
   const [passwordModal, setPasswordModal] = useState(false);
   const [profileModal, setProfileModal] = useState(false);
   const [pinModal, setPinModal] = useState(false);
+  const [langSheet, setLangSheet] = useState(false);
+  const [themeSheet, setThemeSheet] = useState(false);
 
   const onLogout = () => {
-    Alert.alert(t('profile.signOutTitle'), t('profile.signOutConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('profile.signOut'),
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            if (refreshToken) await authApi.logout(refreshToken);
-          } catch { /* ignore */ }
-          clearPin();
-          clear();
-        },
+    showConfirm({
+      variant: 'destructive',
+      icon: '👋',
+      title: t('profile.signOutTitle'),
+      message: t('profile.signOutConfirm'),
+      confirmLabel: t('profile.signOut'),
+      onConfirm: async () => {
+        try {
+          if (refreshToken) await authApi.logout(refreshToken);
+        } catch {
+          /* ignore */
+        }
+        clearPin();
+        clear();
       },
-    ]);
+    });
   };
 
   const pickAvatar = async () => {
@@ -104,161 +128,233 @@ export default function ProfileScreen() {
   };
 
   const onResetPin = () => {
-    Alert.alert(t('profile.resetPinTitle'), t('profile.resetPinDesc'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.confirm'),
-        style: 'destructive',
-        onPress: () => {
-          clearPin();
-          showToast({
-            type: 'success',
-            title: t('common.success'),
-            message: t('profile.pinResetDone'),
-          });
-        },
+    showConfirm({
+      variant: 'destructive',
+      icon: '🔒',
+      title: t('profile.resetPinTitle'),
+      message: t('profile.resetPinDesc'),
+      onConfirm: () => {
+        clearPin();
+        showToast({
+          type: 'success',
+          title: t('common.success'),
+          message: t('profile.pinResetDone'),
+        });
       },
-    ]);
+    });
   };
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F2F7] dark:bg-black">
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Avatar */}
-        <View className="items-center pt-6">
-          <Pressable onPress={pickAvatar} className="active:opacity-70">
-            <UserAvatar uri={user?.avatarUrl} name={user?.fullName} size={80} />
-            {uploadingAvatar ? (
-              <View className="absolute inset-0 items-center justify-center rounded-full bg-black/40">
-                <LoadingSpinner color="#fff" />
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero card */}
+        <View
+          className="mx-4 mt-3 overflow-hidden rounded-[24px] bg-[#007AFF] px-5 py-5"
+          style={{
+            shadowColor: '#007AFF',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.28,
+            shadowRadius: 24,
+            elevation: 10,
+          }}
+        >
+          <View className="flex-row items-center">
+            <Pressable onPress={pickAvatar} className="active:opacity-80">
+              <View
+                style={{
+                  borderWidth: 3,
+                  borderColor: 'rgba(255,255,255,0.35)',
+                  borderRadius: 44,
+                }}
+              >
+                <UserAvatar uri={user?.avatarUrl} name={user?.fullName} size={72} />
               </View>
-            ) : (
-              <View className="absolute bottom-0 right-0 h-7 w-7 items-center justify-center rounded-full bg-white dark:bg-[#2C2C2E] border-2 border-[#F2F2F7] dark:border-[#1C1C1E]">
-                <Text className="text-[13px]">📷</Text>
-              </View>
-            )}
-          </Pressable>
-          <Text className="mt-3 text-[20px] font-bold text-black dark:text-white">
-            {user?.fullName}
-          </Text>
-          <Text className="text-[14px] text-[#8E8E93]">{user?.email}</Text>
-        </View>
-
-        {/* Account */}
-        <Text className="mx-5 mt-8 mb-1 text-[13px] uppercase text-[#8E8E93]">
-          {t('profile.account')}
-        </Text>
-        <View className="mx-5 overflow-hidden rounded-[14px] bg-white dark:bg-[#1C1C1E]">
-          <Pressable
-            onPress={() => setProfileModal(true)}
-            className="flex-row items-center justify-between px-4 py-3.5 active:opacity-70"
-          >
-            <View className="flex-row items-center" style={{ gap: 10 }}>
-              <Text className="text-[18px]">👤</Text>
-              <Text className="text-[15px] text-black dark:text-white">{t('profile.editProfile')}</Text>
+              {uploadingAvatar ? (
+                <View className="absolute inset-0 items-center justify-center rounded-full bg-black/40">
+                  <LoadingSpinner color="#fff" />
+                </View>
+              ) : (
+                <View className="absolute -bottom-1 -right-1 h-[26px] w-[26px] items-center justify-center rounded-full bg-white">
+                  <Text style={{ fontSize: 12 }}>📷</Text>
+                </View>
+              )}
+            </Pressable>
+            <View className="ml-4 flex-1">
+              <Text
+                className="text-[20px] font-bold text-white"
+                numberOfLines={1}
+              >
+                {user?.fullName}
+              </Text>
+              <Text
+                className="mt-[2px] text-[13px] text-white/80"
+                numberOfLines={1}
+              >
+                {user?.email}
+              </Text>
+              <Pressable
+                onPress={() => setProfileModal(true)}
+                className="mt-[10px] self-start rounded-full bg-white/20 px-[14px] py-[6px] active:bg-white/30"
+              >
+                <Text className="text-[12px] font-semibold text-white">
+                  {t('profile.editProfile')}
+                </Text>
+              </Pressable>
             </View>
-            <Text className="text-[16px] text-[#8E8E93]">›</Text>
-          </Pressable>
+          </View>
         </View>
 
         {/* Preferences */}
-        <Text className="mx-5 mt-8 mb-1 text-[13px] uppercase text-[#8E8E93]">
-          {t('profile.preferences')}
-        </Text>
-        <View className="mx-5 overflow-hidden rounded-[14px] bg-white dark:bg-[#1C1C1E]">
-          {/* Language */}
-          <View className="border-b border-[#F2F2F7] dark:border-[#38383A] px-4 py-3">
-            <Text className="text-[15px] text-black dark:text-white">{t('profile.language')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 8, gap: 6 }}>
-              {([
-                { code: 'en' as Locale, flag: '🇬🇧', label: 'EN' },
-                { code: 'ru' as Locale, flag: '🇷🇺', label: 'RU' },
-                { code: 'fr' as Locale, flag: '🇫🇷', label: 'FR' },
-                { code: 'es' as Locale, flag: '🇪🇸', label: 'ES' },
-                { code: 'ar' as Locale, flag: '🇸🇦', label: 'عر' },
-                { code: 'zh' as Locale, flag: '🇨🇳', label: '中' },
-                { code: 'ko' as Locale, flag: '🇰🇷', label: '한' },
-                { code: 'ja' as Locale, flag: '🇯🇵', label: '日' },
-              ]).map((lng) => (
-                <Pressable
-                  key={lng.code}
-                  onPress={() => setLocale(lng.code)}
-                  className={`flex-row items-center rounded-full px-3 py-1 ${
-                    locale === lng.code ? 'bg-[#007AFF]' : 'bg-[#E5E5EA] dark:bg-[#38383A]'
-                  }`}
-                  style={{ gap: 4 }}
-                >
-                  <Text className="text-[14px]">{lng.flag}</Text>
-                  <Text className={`text-[13px] ${locale === lng.code ? 'font-semibold text-white' : 'text-black dark:text-white'}`}>
-                    {lng.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Theme */}
-          <View className="px-4 py-3">
-            <Text className="text-[15px] text-black dark:text-white">{t('profile.theme')}</Text>
-            <View className="mt-2 flex-row gap-2">
-              {(['system', 'light', 'dark'] as ThemeMode[]).map((mode) => (
-                <Pressable
-                  key={mode}
-                  onPress={() => setThemeMode(mode)}
-                  className={`rounded-full px-3 py-1 ${
-                    themeMode === mode ? 'bg-[#007AFF]' : 'bg-[#E5E5EA] dark:bg-[#38383A]'
-                  }`}
-                >
-                  <Text className={`text-[13px] ${themeMode === mode ? 'font-semibold text-white' : 'text-black dark:text-white'}`}>
-                    {t(THEME_LABELS[mode])}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+        <SectionHeader label={t('profile.preferences')} />
+        <View className="mx-4 overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
+          <SettingsRow
+            emoji="🌐"
+            color="#5856D6"
+            label={t('profile.language')}
+            value={`${LANGUAGES.find((l) => l.code === locale)?.flag ?? ''} ${
+              LANGUAGES.find((l) => l.code === locale)?.name ?? locale.toUpperCase()
+            }`}
+            onPress={() => setLangSheet(true)}
+          />
+          <RowDivider />
+          <SettingsRow
+            emoji="🎨"
+            color="#FF2D55"
+            label={t('profile.theme')}
+            value={`${THEME_OPTIONS.find((o) => o.mode === themeMode)?.icon ?? ''} ${t(
+              THEME_LABELS[themeMode],
+            )}`}
+            onPress={() => setThemeSheet(true)}
+            isLast
+          />
         </View>
 
         {/* Security */}
-        <Text className="mx-5 mt-6 mb-1 text-[13px] uppercase text-[#8E8E93]">
-          {t('profile.security')}
-        </Text>
-        <View className="mx-5 overflow-hidden rounded-[14px] bg-white dark:bg-[#1C1C1E]">
-          {/* Change password */}
-          <Pressable
+        <SectionHeader label={t('profile.security')} />
+        <View className="mx-4 overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
+          <SettingsRow
+            emoji="🔑"
+            color="#FF9500"
+            label={t('profile.changePassword')}
             onPress={() => setPasswordModal(true)}
-            className="flex-row items-center justify-between border-b border-[#F2F2F7] dark:border-[#38383A] px-4 py-3.5 active:opacity-70"
-          >
-            <View className="flex-row items-center" style={{ gap: 10 }}>
-              <Text className="text-[18px]">🔑</Text>
-              <Text className="text-[15px] text-black dark:text-white">{t('profile.changePassword')}</Text>
-            </View>
-            <Text className="text-[16px] text-[#8E8E93]">›</Text>
-          </Pressable>
+          />
+          <RowDivider />
+          <SettingsRow
+            emoji="🔒"
+            color="#34C759"
+            label={t('profile.pinCode')}
+            value={hasPin ? t('profile.pinReset') : t('profile.pinSet')}
+            onPress={hasPin ? onResetPin : () => clearPin()}
+            isLast
+          />
+        </View>
 
-          {/* PIN */}
+        {/* Device */}
+        <SectionHeader label={t('profile.device')} />
+        <View className="mx-4 overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
+          <InfoRow
+            emoji="📱"
+            color="#007AFF"
+            label={t('profile.deviceModel')}
+            value={
+              Constants.deviceName ??
+              `${Platform.OS === 'ios' ? 'iPhone' : 'Android'}`
+            }
+          />
+          <RowDivider />
+          <InfoRow
+            emoji="⚙️"
+            color="#8E8E93"
+            label={t('profile.deviceOs')}
+            value={`${Platform.OS === 'ios' ? 'iOS' : 'Android'} ${Platform.Version}`}
+          />
+          <RowDivider />
+          <InfoRow
+            emoji="🌐"
+            color="#5856D6"
+            label={t('profile.deviceLocale')}
+            value={locale.toUpperCase()}
+          />
+          <RowDivider />
+          <InfoRow
+            emoji="🕒"
+            color="#FF2D55"
+            label={t('profile.deviceTimezone')}
+            value={Intl.DateTimeFormat().resolvedOptions().timeZone}
+            isLast
+          />
+        </View>
+
+        {/* About */}
+        <SectionHeader label={t('profile.about')} />
+        <View className="mx-4 overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
+          <InfoRow
+            emoji="🏷️"
+            color="#007AFF"
+            label={t('profile.appVersion')}
+            value={`v${Constants.expoConfig?.version ?? '1.0.0'}`}
+          />
+          <RowDivider />
+          <InfoRow
+            emoji="🔨"
+            color="#AF52DE"
+            label={t('profile.buildNumber')}
+            value={String(
+              Platform.OS === 'ios'
+                ? Constants.expoConfig?.ios?.buildNumber ?? '1'
+                : Constants.expoConfig?.android?.versionCode ?? '1',
+            )}
+          />
+          <RowDivider />
+          <SettingsRow
+            emoji="🔐"
+            color="#34C759"
+            label={t('profile.privacyPolicy')}
+            onPress={() => Linking.openURL('https://salarynet.app/privacy')}
+          />
+          <RowDivider />
+          <SettingsRow
+            emoji="📄"
+            color="#007AFF"
+            label={t('profile.termsOfService')}
+            onPress={() => Linking.openURL('https://salarynet.app/terms')}
+          />
+          <RowDivider />
+          <SettingsRow
+            emoji="✉️"
+            color="#FF3B30"
+            label={t('profile.supportContact')}
+            onPress={() => Linking.openURL('mailto:support@salarynet.app')}
+            isLast
+          />
+        </View>
+
+        {/* Sign out */}
+        <View className="mx-4 mt-8">
           <Pressable
-            onPress={hasPin ? onResetPin : () => { clearPin(); /* triggers setup on next open */ }}
-            className="flex-row items-center justify-between px-4 py-3.5 active:opacity-70"
+            onPress={onLogout}
+            className="items-center rounded-[16px] bg-white py-[15px] active:opacity-70 dark:bg-[#1C1C1E]"
+            style={{
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.08,
+              shadowRadius: 10,
+              elevation: 3,
+            }}
           >
-            <View className="flex-row items-center" style={{ gap: 10 }}>
-              <Text className="text-[18px]">🔒</Text>
-              <Text className="text-[15px] text-black dark:text-white">{t('profile.pinCode')}</Text>
-            </View>
-            <Text className="text-[13px] text-[#8E8E93]">
-              {hasPin ? t('profile.pinReset') : t('profile.pinSet')}
+            <Text className="text-[16px] font-semibold text-[#FF3B30]">
+              {t('profile.signOut')}
             </Text>
           </Pressable>
         </View>
 
-        {/* Sign out */}
-        <View className="mx-5 mt-8">
-          <Button title={t('profile.signOut')} variant="primary" onPress={onLogout} />
-        </View>
-
-        {/* App version */}
-        <Text className="mt-4 text-center text-[12px] text-[#8E8E93]">
-          SalaryNet v1.0.0
+        {/* App version footer */}
+        <Text className="mt-5 text-center text-[12px] text-[#8E8E93]">
+          SalaryNet v{Constants.expoConfig?.version ?? '1.0.0'}
         </Text>
       </ScrollView>
 
@@ -275,6 +371,88 @@ export default function ProfileScreen() {
           });
         }}
       />
+
+      {/* Language picker sheet */}
+      <BottomSheet visible={langSheet} onClose={() => setLangSheet(false)}>
+        <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+        <Text className="text-center text-[18px] font-bold text-black dark:text-white">
+          {t('profile.language')}
+        </Text>
+        <View className="mt-4">
+          {LANGUAGES.map((lng, idx) => {
+            const active = locale === lng.code;
+            return (
+              <Pressable
+                key={lng.code}
+                onPress={() => {
+                  setLocale(lng.code);
+                  setLangSheet(false);
+                }}
+                className={`flex-row items-center py-[12px] ${
+                  idx < LANGUAGES.length - 1
+                    ? 'border-b border-[#F2F2F7] dark:border-[#38383A]'
+                    : ''
+                }`}
+              >
+                <Text style={{ fontSize: 24 }}>{lng.flag}</Text>
+                <View className="ml-3 flex-1">
+                  <Text className="text-[15px] font-semibold text-black dark:text-white">
+                    {lng.native}
+                  </Text>
+                  <Text className="text-[12px] text-[#8E8E93]">{lng.name}</Text>
+                </View>
+                {active ? (
+                  <Text className="text-[18px] font-bold text-[#007AFF]">✓</Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </BottomSheet>
+
+      {/* Theme picker sheet */}
+      <BottomSheet visible={themeSheet} onClose={() => setThemeSheet(false)}>
+        <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+        <Text className="text-center text-[18px] font-bold text-black dark:text-white">
+          {t('profile.theme')}
+        </Text>
+        <View className="mt-4">
+          {THEME_OPTIONS.map((opt, idx) => {
+            const active = themeMode === opt.mode;
+            return (
+              <Pressable
+                key={opt.mode}
+                onPress={() => {
+                  setThemeMode(opt.mode);
+                  setThemeSheet(false);
+                }}
+                className={`flex-row items-center py-[14px] ${
+                  idx < THEME_OPTIONS.length - 1
+                    ? 'border-b border-[#F2F2F7] dark:border-[#38383A]'
+                    : ''
+                }`}
+              >
+                <Text style={{ fontSize: 24 }}>{opt.icon}</Text>
+                <View className="ml-3 flex-1">
+                  <Text className="text-[15px] font-semibold text-black dark:text-white">
+                    {t(THEME_LABELS[opt.mode])}
+                  </Text>
+                  <Text className="text-[12px] text-[#8E8E93]">
+                    {opt.mode === 'system'
+                      ? t('profile.themeSystemDesc')
+                      : opt.mode === 'light'
+                        ? t('profile.themeLightDesc')
+                        : t('profile.themeDarkDesc')}
+                  </Text>
+                </View>
+                {active ? (
+                  <Text className="text-[18px] font-bold text-[#007AFF]">✓</Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </BottomSheet>
 
       {/* Edit Profile Modal */}
       <EditProfileModal
@@ -617,5 +795,107 @@ function EditProfileModal({
         </>
       )}
     </BottomSheet>
+  );
+}
+
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <Text className="mx-5 mb-[6px] mt-6 text-[12px] font-semibold uppercase tracking-wider text-[#8E8E93]">
+      {label}
+    </Text>
+  );
+}
+
+function RowDivider() {
+  return <View className="ml-[58px] h-[0.5px] bg-[#F2F2F7] dark:bg-[#38383A]" />;
+}
+
+function IconBadge({
+  emoji,
+  color,
+  darkColor,
+}: {
+  emoji: string;
+  color: string;
+  darkColor?: string;
+}) {
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
+  const bg = isDark && darkColor ? darkColor : color;
+  return (
+    <View
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        backgroundColor: bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ fontSize: 15 }}>{emoji}</Text>
+    </View>
+  );
+}
+
+function SettingsRow({
+  emoji,
+  color,
+  label,
+  value,
+  onPress,
+  isLast,
+}: {
+  emoji: string;
+  color: string;
+  label: string;
+  value?: string;
+  onPress?: () => void;
+  isLast?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-row items-center px-4 py-[11px] active:bg-[#F2F2F7] dark:active:bg-[#2C2C2E] ${
+        isLast ? 'rounded-b-[16px]' : ''
+      }`}
+    >
+      <IconBadge emoji={emoji} color={color} />
+      <Text className="ml-3 flex-1 text-[15px] font-medium text-black dark:text-white">
+        {label}
+      </Text>
+      {value ? (
+        <Text className="mr-1 text-[13px] text-[#8E8E93]">{value}</Text>
+      ) : null}
+      <Text className="text-[18px] text-[#C7C7CC]">›</Text>
+    </Pressable>
+  );
+}
+
+function InfoRow({
+  emoji,
+  color,
+  label,
+  value,
+  isLast: _isLast,
+}: {
+  emoji: string;
+  color: string;
+  label: string;
+  value: string;
+  isLast?: boolean;
+}) {
+  return (
+    <View className="flex-row items-center px-4 py-[11px]">
+      <IconBadge emoji={emoji} color={color} />
+      <Text className="ml-3 flex-1 text-[15px] font-medium text-black dark:text-white">
+        {label}
+      </Text>
+      <Text
+        className="max-w-[55%] text-right text-[13px] text-[#8E8E93]"
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
   );
 }

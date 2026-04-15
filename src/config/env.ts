@@ -16,6 +16,15 @@ function resolveApiUrl(): string {
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
   if (extra.API_URL) return extra.API_URL;
 
+  // Production builds MUST have an explicit API URL. Shipping a release
+  // with localhost fallback would be a broken app; fail loudly at startup.
+  if (!__DEV__) {
+    throw new Error(
+      'EXPO_PUBLIC_API_URL is not set. Production builds require an explicit API URL — ' +
+        'set EXPO_PUBLIC_API_URL in .env before building.',
+    );
+  }
+
   // Expo dev server host: e.g. "192.168.1.5:8081"
   const hostUri =
     Constants.expoConfig?.hostUri ??

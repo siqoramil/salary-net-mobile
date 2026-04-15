@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Animated, {
   Easing,
@@ -15,6 +15,7 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { usePinStore } from '../stores/pinStore';
 import { useAuthStore } from '../stores/authStore';
+import { useUIStore } from '../stores/uiStore';
 
 const PIN_LENGTH = 4;
 
@@ -71,6 +72,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { hasPin, unlocked, verifyPin, setPin } = usePinStore();
   const { user, clear: clearAuth } = useAuthStore();
+  const showConfirm = useUIStore((s) => s.showConfirm);
 
   const [digits, setDigits] = useState<string[]>([]);
   const [isSetup, setIsSetup] = useState(false);
@@ -163,31 +165,31 @@ export function PinGate({ children }: { children: React.ReactNode }) {
   };
 
   const handleForgetCode = () => {
-    Alert.alert(t('pin.forgetTitle'), t('pin.forgetDesc'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('profile.signOut'),
-        style: 'destructive',
-        onPress: () => {
-          usePinStore.getState().clearPin();
-          clearAuth();
-        },
+    showConfirm({
+      variant: 'destructive',
+      icon: '🔑',
+      title: t('pin.forgetTitle'),
+      message: t('pin.forgetDesc'),
+      confirmLabel: t('profile.signOut'),
+      onConfirm: () => {
+        usePinStore.getState().clearPin();
+        clearAuth();
       },
-    ]);
+    });
   };
 
   const handleLogout = () => {
-    Alert.alert(t('profile.signOutTitle'), t('profile.signOutConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('profile.signOut'),
-        style: 'destructive',
-        onPress: () => {
-          usePinStore.getState().clearPin();
-          clearAuth();
-        },
+    showConfirm({
+      variant: 'destructive',
+      icon: '👋',
+      title: t('profile.signOutTitle'),
+      message: t('profile.signOutConfirm'),
+      confirmLabel: t('profile.signOut'),
+      onConfirm: () => {
+        usePinStore.getState().clearPin();
+        clearAuth();
       },
-    ]);
+    });
   };
 
   // Show PIN screen if locked or in setup mode

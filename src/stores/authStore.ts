@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { storage, StorageKeys } from '../lib/storage';
+import { secureTokens } from '../lib/secureTokens';
 import type { AuthResponse, User } from '../types/auth';
 
 interface AuthState {
@@ -22,15 +23,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     const userJson = storage.getString(StorageKeys.USER);
     set({
       user: userJson ? (JSON.parse(userJson) as User) : null,
-      accessToken: storage.getString(StorageKeys.ACCESS_TOKEN) ?? null,
-      refreshToken: storage.getString(StorageKeys.REFRESH_TOKEN) ?? null,
+      accessToken: secureTokens.getAccess(),
+      refreshToken: secureTokens.getRefresh(),
       isHydrated: true,
     });
   },
   setSession: ({ user, accessToken, refreshToken }) => {
     storage.set(StorageKeys.USER, JSON.stringify(user));
-    storage.set(StorageKeys.ACCESS_TOKEN, accessToken);
-    storage.set(StorageKeys.REFRESH_TOKEN, refreshToken);
+    secureTokens.setAccess(accessToken);
+    secureTokens.setRefresh(refreshToken);
     set({ user, accessToken, refreshToken });
   },
   updateUser: (partial) => {
@@ -43,8 +44,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   clear: () => {
     storage.delete(StorageKeys.USER);
-    storage.delete(StorageKeys.ACCESS_TOKEN);
-    storage.delete(StorageKeys.REFRESH_TOKEN);
+    secureTokens.clear();
     set({ user: null, accessToken: null, refreshToken: null });
   },
 }));

@@ -1,20 +1,14 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CustomTabBar } from '@/src/components/ui/CustomTabBar';
-import { AddExpenseSheet } from '@/src/components/expense/AddExpenseSheet';
-import { useUIStore } from '@/src/stores/uiStore';
 
 export default function TabLayout() {
   const { t } = useTranslation();
-  const addExpenseOpen = useUIStore((s) => s.addExpenseOpen);
-  const closeAddExpense = useUIStore((s) => s.closeAddExpense);
 
   return (
-    <View style={{ flex: 1 }}>
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
@@ -52,7 +46,5 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
-      <AddExpenseSheet visible={addExpenseOpen} onClose={closeAddExpense} />
-    </View>
   );
 }

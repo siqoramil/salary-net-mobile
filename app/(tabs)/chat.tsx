@@ -36,10 +36,10 @@ import type { ExpenseCategoryId } from '@/src/types/expense';
 import { useUIStore } from '@/src/stores/uiStore';
 
 const QUICK_ACTIONS = [
-  { key: 'quickHowMuch', icon: '💰', text: 'How much today?' },
-  { key: 'quickMonthly', icon: '📊', text: 'Monthly summary' },
-  { key: 'quickSavingTips', icon: '💡', text: 'Saving tips' },
-  { key: 'quickAddExample', icon: '🍔', text: 'Add 50000 lunch' },
+  { key: 'quickHowMuch', icon: '💰', text: 'How much today?', accent: '#007AFF' },
+  { key: 'quickMonthly', icon: '📊', text: 'Monthly summary', accent: '#34C759' },
+  { key: 'quickSavingTips', icon: '💡', text: 'Saving tips', accent: '#FF9500' },
+  { key: 'quickAddExample', icon: '🍔', text: 'Add 50000 lunch', accent: '#AF52DE' },
 ];
 
 function stripJsonBlock(text: string): string {
@@ -56,6 +56,15 @@ function extractAction(metadata: ChatMessage['metadata']): CreateExpenseAction |
     return metadata as CreateExpenseAction;
   }
   return null;
+}
+
+function formatTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
 }
 
 export default function ChatScreen() {
@@ -113,7 +122,13 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F2F7] dark:bg-black" edges={['top']}>
-      <HeroHeader title={t('chat.title')} subtitle={t('chat.subtitle')} />
+      <CompactHeader
+        title={t('chat.title')}
+        subtitle={
+          sendMutation.isPending ? t('chat.typing') : t('chat.subtitle')
+        }
+        isTyping={sendMutation.isPending}
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -122,7 +137,7 @@ export default function ChatScreen() {
       >
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={{ padding: 16, paddingTop: 12, paddingBottom: 8 }}
+          contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 12 }}
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
           showsVerticalScrollIndicator={false}
         >
@@ -139,55 +154,65 @@ export default function ChatScreen() {
             messages.map((m, idx) => {
               const action = extractAction(m.metadata);
               const isUser = m.role === 'user';
+              const prev = messages[idx - 1];
+              const showAvatar = !isUser && (!prev || prev.role !== 'assistant');
+
               return (
                 <Animated.View
                   key={m.id}
-                  entering={FadeInUp.delay(Math.min(idx, 3) * 40).duration(300)}
-                  className="mb-3"
+                  entering={FadeInUp.delay(Math.min(idx, 3) * 30).duration(280)}
+                  className="mb-2"
                 >
-                  <View
-                    className={`flex-row items-end ${
-                      isUser ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    {!isUser ? <BotAvatar size={28} /> : null}
-                    <View
-                      className={`${
-                        !isUser ? 'ml-2' : ''
-                      } max-w-[78%] px-4 py-3 ${
-                        isUser
-                          ? 'rounded-[22px] rounded-br-[6px] bg-[#007AFF]'
-                          : 'rounded-[22px] rounded-bl-[6px] bg-white dark:bg-[#1C1C1E]'
-                      }`}
-                      style={
-                        !isUser
-                          ? {
-                              shadowColor: '#000',
-                              shadowOffset: { width: 0, height: 1 },
-                              shadowOpacity: 0.06,
-                              shadowRadius: 6,
-                              elevation: 2,
-                            }
-                          : undefined
-                      }
-                    >
-                      <Text
-                        className={`text-[15px] leading-[21px] ${
-                          isUser ? 'text-white' : 'text-black dark:text-white'
-                        }`}
-                      >
-                        {stripJsonBlock(m.content) || '…'}
+                  {isUser ? (
+                    <View className="items-end">
+                      <View className="max-w-[80%] rounded-[20px] rounded-br-[6px] bg-[#007AFF] px-[14px] py-[10px]">
+                        <Text className="text-[15px] leading-[21px] text-white">
+                          {stripJsonBlock(m.content) || '…'}
+                        </Text>
+                      </View>
+                      <Text className="mr-1 mt-1 text-[10px] text-[#8E8E93]">
+                        {formatTime(m.createdAt ?? '')}
                       </Text>
                     </View>
-                  </View>
-                  {action ? (
-                    <ConfirmExpenseCard
-                      action={action}
-                      pending={createExpense.isPending}
-                      onConfirm={() => confirmExpense(action)}
-                      t={t}
-                    />
-                  ) : null}
+                  ) : (
+                    <View className="flex-row items-start">
+                      <View style={{ width: 34 }}>
+                        {showAvatar ? <BotAvatar size={30} /> : null}
+                      </View>
+                      <View className="ml-2 flex-1">
+                        {showAvatar ? (
+                          <Text className="mb-1 ml-1 text-[11px] font-semibold text-[#8E8E93]">
+                            SalaryBot
+                          </Text>
+                        ) : null}
+                        <View
+                          className="max-w-[90%] self-start rounded-[20px] rounded-tl-[6px] bg-white px-[14px] py-[10px] dark:bg-[#1C1C1E]"
+                          style={{
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 4,
+                            elevation: 1,
+                          }}
+                        >
+                          <Text className="text-[15px] leading-[21px] text-black dark:text-white">
+                            {stripJsonBlock(m.content) || '…'}
+                          </Text>
+                        </View>
+                        {action ? (
+                          <ConfirmExpenseCard
+                            action={action}
+                            pending={createExpense.isPending}
+                            onConfirm={() => confirmExpense(action)}
+                            t={t}
+                          />
+                        ) : null}
+                        <Text className="ml-1 mt-1 text-[10px] text-[#8E8E93]">
+                          {formatTime(m.createdAt ?? '')}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                 </Animated.View>
               );
             })
@@ -196,17 +221,19 @@ export default function ChatScreen() {
           {sendMutation.isPending ? (
             <Animated.View
               entering={FadeIn.duration(200)}
-              className="mb-3 flex-row items-end"
+              className="mb-2 flex-row items-start"
             >
-              <BotAvatar size={28} />
+              <View style={{ width: 34 }}>
+                <BotAvatar size={30} />
+              </View>
               <View
-                className="ml-2 rounded-[22px] rounded-bl-[6px] bg-white dark:bg-[#1C1C1E] px-4 py-[14px]"
+                className="ml-2 mt-[18px] self-start rounded-[20px] rounded-tl-[6px] bg-white px-[16px] py-[14px] dark:bg-[#1C1C1E]"
                 style={{
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.06,
-                  shadowRadius: 6,
-                  elevation: 2,
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                  elevation: 1,
                 }}
               >
                 <TypingDots />
@@ -215,28 +242,30 @@ export default function ChatScreen() {
           ) : null}
         </ScrollView>
 
+        {/* Suggestion chips (only when chat has messages) */}
         {messages.length > 0 ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, gap: 8 }}
-            className="max-h-12"
+            contentContainerStyle={{
+              paddingHorizontal: 14,
+              paddingTop: 4,
+              paddingBottom: 8,
+              gap: 8,
+            }}
           >
             {QUICK_ACTIONS.map((q) => (
               <Pressable
                 key={q.key}
                 onPress={() => send(q.text)}
-                className="flex-row items-center gap-[6px] rounded-full bg-white dark:bg-[#1C1C1E] px-4 py-2 active:opacity-70"
+                className="flex-row items-center rounded-full bg-white px-[12px] py-[8px] active:opacity-80 dark:bg-[#1C1C1E]"
                 style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.06,
-                  shadowRadius: 4,
-                  elevation: 2,
+                  borderWidth: 1,
+                  borderColor: `${q.accent}33`,
                 }}
               >
-                <Text className="text-[14px]">{q.icon}</Text>
-                <Text className="text-[13px] font-medium text-black dark:text-white">
+                <Text style={{ fontSize: 13 }}>{q.icon}</Text>
+                <Text className="ml-[6px] text-[12px] font-semibold text-black dark:text-white">
                   {t(`chat.${q.key}`)}
                 </Text>
               </Pressable>
@@ -244,18 +273,22 @@ export default function ChatScreen() {
           </ScrollView>
         ) : null}
 
+        {/* Input bar */}
         <View
-          className="flex-row items-end gap-2 bg-white dark:bg-[#1C1C1E] px-4 pt-2"
+          className="mx-3 mb-2 flex-row items-center gap-2 rounded-[26px] bg-white px-[6px] py-[6px] dark:bg-[#1C1C1E]"
           style={{
-            paddingBottom: Platform.OS === 'ios' ? 10 : 80,
+            marginBottom: Platform.OS === 'ios' ? 8 : 80,
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 14,
             elevation: 6,
           }}
         >
-          <View className="flex-1 rounded-[22px] bg-[#F2F2F7] dark:bg-[#2C2C2E] px-4 py-[10px]">
+          <View className="h-[36px] w-[36px] items-center justify-center rounded-full bg-[#F2F2F7] dark:bg-[#2C2C2E]">
+            <Text className="text-[18px] text-[#8E8E93]">＋</Text>
+          </View>
+          <View className="flex-1 justify-center px-[4px]">
             <TextInput
               value={input}
               onChangeText={setInput}
@@ -265,7 +298,7 @@ export default function ChatScreen() {
               returnKeyType="send"
               onSubmitEditing={() => send()}
               multiline
-              style={{ maxHeight: 100 }}
+              style={{ maxHeight: 96, minHeight: 24, paddingTop: 0, paddingBottom: 0 }}
             />
           </View>
           <SendButton
@@ -278,93 +311,81 @@ export default function ChatScreen() {
   );
 }
 
-function HeroHeader({ title, subtitle }: { title: string; subtitle: string }) {
+function CompactHeader({
+  title,
+  subtitle,
+  isTyping,
+}: {
+  title: string;
+  subtitle: string;
+  isTyping: boolean;
+}) {
   const pulse = useSharedValue(0);
-  const glow = useSharedValue(0);
 
   useEffect(() => {
     pulse.value = withRepeat(
-      withTiming(1, { duration: 2400, easing: Easing.out(Easing.quad) }),
-      -1,
-      false,
-    );
-    glow.value = withRepeat(
       withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
-  }, [pulse, glow]);
+  }, [pulse]);
 
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.6 }],
-    opacity: 0.35 * (1 - pulse.value),
-  }));
-
-  const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + glow.value * 0.06 }],
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: 0.4 + pulse.value * 0.6,
+    transform: [{ scale: 1 + pulse.value * 0.15 }],
   }));
 
   return (
-    <View className="mx-4 mt-3 overflow-hidden rounded-[22px] bg-[#007AFF] px-5 py-4">
-      <View className="flex-row items-center">
+    <View className="flex-row items-center px-5 pb-3 pt-2">
+      <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              position: 'absolute',
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: '#007AFF',
+            },
+            glowStyle,
+          ]}
+        />
         <View
           style={{
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: '#007AFF',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              {
-                position: 'absolute',
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: '#fff',
-              },
-              ringStyle,
-            ]}
-          />
-          <Animated.View
-            style={[
-              {
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: 'rgba(255,255,255,0.22)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              },
-              iconStyle,
-            ]}
-          >
-            <Text style={{ fontSize: 24 }}>✨</Text>
-          </Animated.View>
+          <Text style={{ fontSize: 20 }}>✨</Text>
         </View>
-        <View className="ml-3 flex-1">
-          <Text className="text-[20px] font-bold text-white">{title}</Text>
-          <View className="mt-[3px] flex-row items-center">
-            <View
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 3,
-                backgroundColor: '#34C759',
-                marginRight: 6,
-              }}
-            />
-            <Text className="text-[12px] text-white/85">{subtitle}</Text>
-          </View>
+      </View>
+      <View className="ml-3 flex-1">
+        <Text className="text-[18px] font-bold text-black dark:text-white">
+          {title}
+        </Text>
+        <View className="mt-[2px] flex-row items-center">
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: isTyping ? '#FF9500' : '#34C759',
+              marginRight: 6,
+            }}
+          />
+          <Text className="text-[12px] text-[#8E8E93]">{subtitle}</Text>
         </View>
       </View>
     </View>
   );
 }
 
-function BotAvatar({ size = 28 }: { size?: number }) {
+function BotAvatar({ size = 30 }: { size?: number }) {
   return (
     <View
       style={{
@@ -376,12 +397,12 @@ function BotAvatar({ size = 28 }: { size?: number }) {
         justifyContent: 'center',
         shadowColor: '#007AFF',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.35,
         shadowRadius: 4,
         elevation: 3,
       }}
     >
-      <Text style={{ fontSize: size * 0.52 }}>✨</Text>
+      <Text style={{ fontSize: size * 0.5 }}>✨</Text>
     </View>
   );
 }
@@ -419,10 +440,10 @@ function TypingDots() {
     transform: [{ translateY: -d3.value * 4 }],
   }));
 
-  const dot = { width: 6, height: 6, borderRadius: 3, backgroundColor: '#8E8E93' };
+  const dot = { width: 7, height: 7, borderRadius: 4, backgroundColor: '#8E8E93' };
 
   return (
-    <View className="flex-row items-center" style={{ gap: 4 }}>
+    <View className="flex-row items-center" style={{ gap: 5 }}>
       <Animated.View style={[dot, s1]} />
       <Animated.View style={[dot, s2]} />
       <Animated.View style={[dot, s3]} />
@@ -448,15 +469,15 @@ function SendButton({ active, onPress }: { active: boolean; onPress: () => void 
       <Animated.View
         style={[
           {
-            width: 40,
-            height: 40,
-            borderRadius: 20,
+            width: 36,
+            height: 36,
+            borderRadius: 18,
             backgroundColor: active ? '#007AFF' : '#E5E5EA',
             alignItems: 'center',
             justifyContent: 'center',
             shadowColor: '#007AFF',
             shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: active ? 0.3 : 0,
+            shadowOpacity: active ? 0.4 : 0,
             shadowRadius: 6,
             elevation: active ? 4 : 0,
           },
@@ -466,7 +487,7 @@ function SendButton({ active, onPress }: { active: boolean; onPress: () => void 
         <Text
           style={{
             fontSize: 17,
-            fontWeight: '700',
+            fontWeight: '800',
             color: active ? '#fff' : '#C7C7CC',
           }}
         >
@@ -498,27 +519,32 @@ function EmptyState({
       false,
     );
     breath.value = withRepeat(
-      withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+      withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
   }, [pulse, breath]);
 
   const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.7 }],
-    opacity: 0.25 * (1 - pulse.value),
+    transform: [{ scale: 1 + pulse.value * 0.8 }],
+    opacity: 0.3 * (1 - pulse.value),
+  }));
+
+  const ring2Style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + pulse.value * 1.3 }],
+    opacity: 0.18 * (1 - pulse.value),
   }));
 
   const heroStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + breath.value * 0.06 }],
+    transform: [{ scale: 1 + breath.value * 0.05 }],
   }));
 
   return (
-    <View className="mt-4 items-center">
+    <View className="mt-6 items-center">
       <View
         style={{
-          width: 96,
-          height: 96,
+          width: 120,
+          height: 120,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -528,9 +554,22 @@ function EmptyState({
           style={[
             {
               position: 'absolute',
-              width: 96,
-              height: 96,
-              borderRadius: 48,
+              width: 120,
+              height: 120,
+              borderRadius: 60,
+              backgroundColor: '#007AFF',
+            },
+            ring2Style,
+          ]}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              position: 'absolute',
+              width: 104,
+              height: 104,
+              borderRadius: 52,
               backgroundColor: '#007AFF',
             },
             ringStyle,
@@ -539,22 +578,22 @@ function EmptyState({
         <Animated.View
           style={[
             {
-              width: 96,
-              height: 96,
-              borderRadius: 48,
+              width: 88,
+              height: 88,
+              borderRadius: 44,
               backgroundColor: '#007AFF',
               alignItems: 'center',
               justifyContent: 'center',
               shadowColor: '#007AFF',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.35,
-              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.4,
+              shadowRadius: 20,
               elevation: 12,
             },
             heroStyle,
           ]}
         >
-          <Text style={{ fontSize: 44 }}>✨</Text>
+          <Text style={{ fontSize: 42 }}>✨</Text>
         </Animated.View>
       </View>
 
@@ -565,35 +604,34 @@ function EmptyState({
         {desc}
       </Text>
 
-      <View className="mt-7 w-full flex-row flex-wrap justify-between gap-y-3">
+      <View className="mt-8 w-full px-2">
         {QUICK_ACTIONS.map((q, idx) => (
           <Animated.View
             key={q.key}
-            entering={FadeInUp.delay(150 + idx * 80).duration(420)}
-            className="w-[48%]"
+            entering={FadeInUp.delay(150 + idx * 70).duration(360)}
           >
             <Pressable
               onPress={() => onQuickAction(q.text)}
-              className="rounded-[18px] bg-white p-4 active:scale-[0.97] dark:bg-[#1C1C1E]"
+              className="mb-[10px] flex-row items-center rounded-[18px] bg-white p-[14px] active:opacity-85 dark:bg-[#1C1C1E]"
               style={{
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.08,
+                shadowOpacity: 0.06,
                 shadowRadius: 10,
-                elevation: 4,
+                elevation: 2,
               }}
             >
               <View
-                className="h-10 w-10 items-center justify-center rounded-[12px]"
-                style={{ backgroundColor: 'rgba(0,122,255,0.12)' }}
+                className="h-[42px] w-[42px] items-center justify-center rounded-[12px]"
+                style={{ backgroundColor: `${q.accent}1A` }}
               >
-                <Text className="text-[20px]">{q.icon}</Text>
+                <Text style={{ fontSize: 22 }}>{q.icon}</Text>
               </View>
-              <Text
-                className="mt-3 text-[13px] font-semibold text-black dark:text-white"
-                numberOfLines={2}
-              >
+              <Text className="ml-3 flex-1 text-[14px] font-semibold text-black dark:text-white">
                 {t(`chat.${q.key}`)}
+              </Text>
+              <Text className="text-[18px]" style={{ color: q.accent }}>
+                ›
               </Text>
             </Pressable>
           </Animated.View>
@@ -617,27 +655,27 @@ function ConfirmExpenseCard({
   const cat = CATEGORY_BY_ID[action.data.category as ExpenseCategoryId];
   return (
     <Animated.View
-      entering={FadeInUp.duration(380)}
-      className="mt-2 self-start overflow-hidden rounded-[18px] bg-white p-4 dark:bg-[#1C1C1E]"
+      entering={FadeInUp.duration(360)}
+      className="mt-2 max-w-[88%] self-start overflow-hidden rounded-[18px] bg-white p-[14px] dark:bg-[#1C1C1E]"
       style={{
-        marginLeft: 36,
-        maxWidth: '85%',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.08,
         shadowRadius: 12,
-        elevation: 4,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: 'rgba(0,122,255,0.15)',
       }}
     >
-      <Text className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93]">
+      <Text className="text-[10px] font-bold uppercase tracking-wider text-[#007AFF]">
         {t('chat.confirmExpense')}
       </Text>
-      <View className="mt-3 flex-row items-center">
+      <View className="mt-2 flex-row items-center">
         <View
-          className="h-12 w-12 items-center justify-center rounded-[14px]"
+          className="h-11 w-11 items-center justify-center rounded-[14px]"
           style={{ backgroundColor: `${cat?.color ?? '#AEB6BF'}25` }}
         >
-          <Text className="text-[24px]">{cat?.icon ?? '📦'}</Text>
+          <Text className="text-[22px]">{cat?.icon ?? '📦'}</Text>
         </View>
         <View className="ml-3 flex-1">
           <MoneyText
@@ -655,11 +693,11 @@ function ConfirmExpenseCard({
       </View>
       <Pressable
         onPress={onConfirm}
-        className="mt-4 items-center rounded-[14px] bg-[#007AFF] py-[12px] active:opacity-80"
+        className="mt-3 items-center rounded-[12px] bg-[#007AFF] py-[10px] active:opacity-80"
         style={{
           shadowColor: '#007AFF',
           shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.25,
+          shadowOpacity: 0.3,
           shadowRadius: 8,
           elevation: 4,
         }}

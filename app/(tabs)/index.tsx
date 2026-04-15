@@ -18,6 +18,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Svg, { Path } from 'react-native-svg';
 
 import { useAuthStore } from '@/src/stores/authStore';
 import { useThemeStore } from '@/src/stores/themeStore';
@@ -32,7 +33,7 @@ import { UserAvatar } from '@/src/components/ui/UserAvatar';
 
 type Period = 'daily' | 'weekly' | 'monthly';
 
-const ACTION_WIDTH = 72;
+const ACTION_WIDTH = 82;
 const SWIPE_FRICTION = 0.35;
 const SNAP_SPRING = { damping: 26, stiffness: 70, mass: 1.1 };
 
@@ -82,7 +83,11 @@ export default function HomeScreen() {
         {/* Balance card */}
         <View className="mx-5 mt-3 overflow-hidden rounded-[20px] bg-[#007AFF] p-5">
           <Text className="text-[13px] font-medium text-white/70">
-            {t('home.totalLabel', { period: t(`home.period${period.charAt(0).toUpperCase() + period.slice(1)}` as 'home.periodDaily') })}
+            {t('home.totalLabel', {
+              period: t(
+                `home.period${period.charAt(0).toUpperCase() + period.slice(1)}` as 'home.periodDaily',
+              ),
+            })}
           </Text>
 
           {summaryQuery.isLoading ? (
@@ -122,7 +127,9 @@ export default function HomeScreen() {
                     period === p ? 'text-[#007AFF]' : 'text-white/80'
                   }`}
                 >
-                  {t(`home.period${p.charAt(0).toUpperCase() + p.slice(1)}` as 'home.periodDaily')}
+                  {t(
+                    `home.period${p.charAt(0).toUpperCase() + p.slice(1)}` as 'home.periodDaily',
+                  )}
                 </Text>
               </Pressable>
             ))}
@@ -255,21 +262,24 @@ function SwipeableExpenseRow({
     >
       <GestureDetector gesture={pan}>
         <Animated.View style={[{ flexDirection: 'row' }, rowStyle]}>
-          {/* Edit action (off-screen left) */}
+          {/* Edit action (revealed on right swipe) */}
           <Pressable
             onPress={handleEdit}
+            android_ripple={{ color: 'rgba(255,255,255,0.15)' }}
             style={{
               width: ACTION_WIDTH,
               marginLeft: -ACTION_WIDTH,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: rowBg,
+              backgroundColor: '#007AFF',
             }}
           >
-            <Text style={{ fontSize: 20 }}>✏️</Text>
-            <Text style={{ fontSize: 10, color: '#007AFF', fontWeight: '600', marginTop: 2 }}>
-              {t('common.edit')}
-            </Text>
+            <Animated.View style={editActionStyle} className="items-center">
+              <PencilIcon size={26} color="#fff" />
+              <Text className="mt-[6px] text-[12px] font-semibold text-white tracking-wide">
+                {t('common.edit')}
+              </Text>
+            </Animated.View>
           </Pressable>
 
           {/* Row content */}
@@ -327,24 +337,74 @@ function SwipeableExpenseRow({
             />
           </View>
 
-          {/* Delete action (off-screen right) */}
+          {/* Delete action (revealed on left swipe) */}
           <Pressable
             onPress={handleDelete}
+            android_ripple={{ color: 'rgba(255,255,255,0.15)' }}
             style={{
               width: ACTION_WIDTH,
               marginRight: -ACTION_WIDTH,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: rowBg,
+              backgroundColor: '#FF3B30',
             }}
           >
-            <Text style={{ fontSize: 20 }}>🗑</Text>
-            <Text style={{ fontSize: 10, color: '#FF3B30', fontWeight: '600', marginTop: 2 }}>
-              {t('common.delete')}
-            </Text>
+            <Animated.View style={deleteActionStyle} className="items-center">
+              <TrashIcon size={22} color="#fff" />
+              <Text className="mt-1 text-[11px] font-semibold text-white">
+                {t('common.delete')}
+              </Text>
+            </Animated.View>
           </Pressable>
         </Animated.View>
       </GestureDetector>
     </View>
+  );
+}
+
+function PencilIcon({ size = 22, color = '#fff' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15.232 3.232l3.536 3.536M14.5 4l-11 11v4h4l11-11-4-4z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function TrashIcon({ size = 22, color = '#fff' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 6h18"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M10 11v6M14 11v6"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+    </Svg>
   );
 }

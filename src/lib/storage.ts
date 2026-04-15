@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { hydrateTokens } from './secureTokens';
 
 /**
  * Sync facade over AsyncStorage.
@@ -31,6 +32,8 @@ export async function hydrateStorage(): Promise<void> {
     // eslint-disable-next-line no-console
     console.warn('Storage hydration failed', err);
   }
+  // Load access/refresh tokens from secure storage (Keychain / EncryptedSharedPreferences)
+  await hydrateTokens();
   hydrated = true;
 }
 
@@ -62,8 +65,6 @@ export const storage = {
 };
 
 export const StorageKeys = {
-  ACCESS_TOKEN: 'auth.accessToken',
-  REFRESH_TOKEN: 'auth.refreshToken',
   USER: 'auth.user',
   HAS_SEEN_ONBOARDING: 'app.hasSeenOnboarding',
   LOCALE: 'app.locale',

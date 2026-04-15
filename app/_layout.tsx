@@ -23,7 +23,10 @@ import { useLocaleStore } from '../src/stores/localeStore';
 import { PinGate } from '../src/components/PinGate';
 import { LoadingSpinner } from '../src/components/ui/LoadingSpinner';
 import { ToastHost } from '../src/components/ui/ToastHost';
+import { ConfirmDialog } from '../src/components/ui/ConfirmDialog';
+import { AddExpenseSheet } from '../src/components/expense/AddExpenseSheet';
 import { usePinStore } from '../src/stores/pinStore';
+import { useUIStore } from '../src/stores/uiStore';
 import { hydrateStorage, storage, StorageKeys } from '../src/lib/storage';
 
 export const unstable_settings = {
@@ -35,6 +38,8 @@ function RootLayoutNav({ resolved }: { resolved: 'light' | 'dark' }) {
   const segments = useSegments();
   const navigationState = useRootNavigationState();
   const { user, isHydrated, hydrate } = useAuthStore();
+  const addExpenseOpen = useUIStore((s) => s.addExpenseOpen);
+  const closeAddExpense = useUIStore((s) => s.closeAddExpense);
 
   useEffect(() => {
     hydrate();
@@ -69,7 +74,9 @@ function RootLayoutNav({ resolved }: { resolved: 'light' | 'dark' }) {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
+      <AddExpenseSheet visible={addExpenseOpen} onClose={closeAddExpense} />
       <ToastHost />
+      <ConfirmDialog />
       <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
