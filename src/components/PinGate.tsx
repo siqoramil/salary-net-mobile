@@ -202,7 +202,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
       <Animated.View style={[{ flex: 1 }, fadeStyle]}>
 
         {/* ── Top: logo + title + dots ── */}
-        <View style={{ alignItems: 'center', paddingTop: 40 }}>
+        <View style={{ alignItems: 'center', paddingTop: 20 }}>
           <Image
             source={require('../../assets/images/icon.png')}
             style={{ width: 200, height: 200, borderRadius: 42 }}
