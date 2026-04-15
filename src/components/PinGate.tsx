@@ -15,9 +15,9 @@ import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
 
 const PIN_LENGTH = 4;
-const BLUE     = '#5B88D6';
-const BLUE_BG  = '#EBF1FA';
-const BLUE_PRESSED = '#D0E0F5';
+const BLUE         = '#5B88D6';
+const BLUE_BG      = '#D8E9F8';
+const BLUE_PRESSED = '#C2D8F2';
 
 // ─── PIN dot ─────────────────────────────────────────────────────────────────
 function PinDot({ filled, isDark }: { filled: boolean; isDark: boolean }) {
@@ -198,39 +198,23 @@ export function PinGate({ children }: { children: React.ReactNode }) {
   const Cell = ({
     onPress,
     children,
-    isDigit = false,
   }: {
     onPress?: () => void;
     children: React.ReactNode;
-    isDigit?: boolean;
   }) => (
     <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
       <Pressable
         onPress={onPress}
-        disabled={!onPress}
         style={({ pressed }) => ({
           width: BTN,
           height: BTN,
           borderRadius: BTN / 2,
-          backgroundColor: onPress
-            ? pressed ? btnPressed : btnBg
-            : 'transparent',
+          backgroundColor: !onPress ? 'transparent' : pressed ? btnPressed : btnBg,
           alignItems: 'center',
           justifyContent: 'center',
         })}
       >
-        {({ pressed: _ }) =>
-          typeof children === 'string' ? (
-            <Text style={{
-              fontSize: FONT_SZ,
-              fontWeight: '300',
-              color: BLUE,
-              includeFontPadding: false,
-            }}>
-              {children}
-            </Text>
-          ) : children
-        }
+        {children}
       </Pressable>
     </View>
   );
@@ -242,7 +226,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
         {/* Logo */}
         <Image
           source={require('../../assets/images/icon.png')}
-          style={{ width: 72, height: 72, borderRadius: 16, marginBottom: 16 }}
+          style={{ width: 100, height: 100, borderRadius: 22, marginBottom: 16 }}
           resizeMode="contain"
         />
 
@@ -285,8 +269,10 @@ export function PinGate({ children }: { children: React.ReactNode }) {
           {([[1, 2, 3], [4, 5, 6], [7, 8, 9]] as number[][]).map((row, ri) => (
             <View key={ri} style={{ flexDirection: 'row' }}>
               {row.map((n) => (
-                <Cell key={n} onPress={() => handleDigit(String(n))} isDigit>
-                  {String(n)}
+                <Cell key={n} onPress={() => handleDigit(String(n))}>
+                  <Text style={{ fontSize: FONT_SZ, fontWeight: '300', color: BLUE, includeFontPadding: false }}>
+                    {String(n)}
+                  </Text>
                 </Cell>
               ))}
             </View>
@@ -298,13 +284,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
             <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
               {!isSetup ? (
                 <Pressable onPress={handleForgetCode} hitSlop={12}>
-                  <Text style={{
-                    fontSize: 13,
-                    fontWeight: '500',
-                    color: BLUE,
-                    textAlign: 'center',
-                    lineHeight: 18,
-                  }}>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: BLUE, textAlign: 'center', lineHeight: 18 }}>
                     {t('pin.forget')}
                   </Text>
                 </Pressable>
@@ -312,7 +292,9 @@ export function PinGate({ children }: { children: React.ReactNode }) {
             </View>
 
             {/* 0 */}
-            <Cell onPress={() => handleDigit('0')} isDigit>0</Cell>
+            <Cell onPress={() => handleDigit('0')}>
+              <Text style={{ fontSize: FONT_SZ, fontWeight: '300', color: BLUE, includeFontPadding: false }}>0</Text>
+            </Cell>
 
             {/* Backspace */}
             <Cell onPress={handleDelete}>

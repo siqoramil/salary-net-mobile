@@ -15,9 +15,9 @@ import { usePinStore } from '@/src/stores/pinStore';
 import { useUIStore } from '@/src/stores/uiStore';
 
 const PIN_LENGTH = 4;
-const BLUE      = '#5B88D6';
-const BLUE_BG   = '#EBF1FA';
-const BLUE_PRESSED = '#D0E0F5';
+const BLUE         = '#5B88D6';
+const BLUE_BG      = '#D8E9F8';
+const BLUE_PRESSED = '#C2D8F2';
 
 type Step = 'verify' | 'create' | 'confirm';
 
@@ -131,39 +131,23 @@ export default function ChangePinScreen() {
   const Cell = ({
     onPress,
     children,
-    isDigit = false,
   }: {
     onPress?: () => void;
     children: React.ReactNode;
-    isDigit?: boolean;
   }) => (
     <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
       <Pressable
         onPress={onPress}
-        disabled={!onPress}
         style={({ pressed }) => ({
           width: BTN,
           height: BTN,
           borderRadius: BTN / 2,
-          backgroundColor: onPress
-            ? pressed ? btnPressed : btnBg
-            : 'transparent',
+          backgroundColor: !onPress ? 'transparent' : pressed ? btnPressed : btnBg,
           alignItems: 'center',
           justifyContent: 'center',
         })}
       >
-        {({ pressed: _ }) =>
-          typeof children === 'string' ? (
-            <Text style={{
-              fontSize: FONT_SZ,
-              fontWeight: '300',
-              color: BLUE,
-              includeFontPadding: false,
-            }}>
-              {children}
-            </Text>
-          ) : children
-        }
+        {children}
       </Pressable>
     </View>
   );
@@ -246,8 +230,10 @@ export default function ChangePinScreen() {
           {([[1, 2, 3], [4, 5, 6], [7, 8, 9]] as number[][]).map((row, ri) => (
             <View key={ri} style={{ flexDirection: 'row' }}>
               {row.map((n) => (
-                <Cell key={n} onPress={() => handleDigit(String(n))} isDigit>
-                  {String(n)}
+                <Cell key={n} onPress={() => handleDigit(String(n))}>
+                  <Text style={{ fontSize: FONT_SZ, fontWeight: '300', color: BLUE, includeFontPadding: false }}>
+                    {String(n)}
+                  </Text>
                 </Cell>
               ))}
             </View>
@@ -255,9 +241,10 @@ export default function ChangePinScreen() {
 
           {/* Bottom row */}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {/* empty left cell */}
             <View style={{ width: CELL_W, height: CELL_H }} />
-            <Cell onPress={() => handleDigit('0')} isDigit>0</Cell>
+            <Cell onPress={() => handleDigit('0')}>
+              <Text style={{ fontSize: FONT_SZ, fontWeight: '300', color: BLUE, includeFontPadding: false }}>0</Text>
+            </Cell>
             <Cell onPress={handleDelete}>
               <Ionicons name="backspace-outline" size={ICON_SZ} color={iconColor} />
             </Cell>
