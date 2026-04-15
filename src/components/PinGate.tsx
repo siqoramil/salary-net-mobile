@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, Text, View, useColorScheme, useWindowDimensions } from 'react-native';
+import { Image, Pressable, Text, TouchableOpacity, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Animated, {
   useAnimatedStyle,
@@ -195,126 +195,96 @@ export function PinGate({ children }: { children: React.ReactNode }) {
     : null;
 
   // ─── Numpad cell ──────────────────────────────────────────────────────────
-  const Cell = ({
-    onPress,
-    children,
-  }: {
-    onPress?: () => void;
-    children: React.ReactNode;
-  }) => (
-    <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => ({
-          width: BTN,
-          height: BTN,
-          borderRadius: BTN / 2,
-          backgroundColor: !onPress ? 'transparent' : pressed ? btnPressed : btnBg,
-          alignItems: 'center',
-          justifyContent: 'center',
-        })}
-      >
-        {children}
-      </Pressable>
-    </View>
-  );
+  const numBg = isDark ? '#1C2740' : BLUE_BG;
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
-      <Animated.View style={[{ flex: 1, alignItems: 'center', justifyContent: 'center' }, fadeStyle]}>
+      <Animated.View style={[{ flex: 1 }, fadeStyle]}>
 
-        {/* Logo */}
-        <Image
-          source={require('../../assets/images/icon.png')}
-          style={{ width: 180, height: 180, borderRadius: 38, marginBottom: 28 }}
-          resizeMode="contain"
-        />
-
-        {/* Title */}
-        <Text style={{
-          fontSize: 22,
-          fontWeight: '700',
-          color: textColor,
-          letterSpacing: -0.2,
-        }}>
-          {title}
-        </Text>
-
-        {/* Subtitle */}
-        <Text style={{
-          marginTop: 6,
-          fontSize: 14,
-          color: '#8E8E93',
-          opacity: subtitle ? 1 : 0,
-        }}>
-          {subtitle ?? ' '}
-        </Text>
-
-        {/* PIN dots */}
-        <Animated.View style={[{ flexDirection: 'row', marginTop: 28, marginBottom: 6 }, shakeStyle]}>
-          {Array.from({ length: PIN_LENGTH }).map((_, i) => (
-            <PinDot key={i} filled={i < digits.length} isDark={isDark} />
-          ))}
-        </Animated.View>
-
-        {/* Error */}
-        <View style={{ height: 22, justifyContent: 'center' }}>
-          {error ? (
-            <Text style={{ fontSize: 13, color: '#FF3B30' }}>{error}</Text>
-          ) : null}
-        </View>
-
-        {/* Numpad */}
-        <View style={{ width: screenW, marginTop: 12 }}>
-          {([[1, 2, 3], [4, 5, 6], [7, 8, 9]] as number[][]).map((row, ri) => (
-            <View key={ri} style={{ flexDirection: 'row' }}>
-              {row.map((n) => (
-                <Cell key={n} onPress={() => handleDigit(String(n))}>
-                  <Text style={{ fontSize: FONT_SZ, fontWeight: '300', color: BLUE, includeFontPadding: false }}>
-                    {String(n)}
-                  </Text>
-                </Cell>
-              ))}
-            </View>
-          ))}
-
-          {/* Bottom row */}
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {/* Forget code */}
-            <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
-              {!isSetup ? (
-                <Pressable onPress={handleForgetCode} hitSlop={12}>
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: BLUE, textAlign: 'center', lineHeight: 18 }}>
-                    {t('pin.forget')}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-
-            {/* 0 */}
-            <Cell onPress={() => handleDigit('0')}>
-              <Text style={{ fontSize: FONT_SZ, fontWeight: '300', color: BLUE, includeFontPadding: false }}>0</Text>
-            </Cell>
-
-            {/* Backspace */}
-            <Cell onPress={handleDelete}>
-              <Ionicons name="backspace-outline" size={ICON_SZ} color={iconColor} />
-            </Cell>
+        {/* ── Top: logo + title + dots ── */}
+        <View style={{ alignItems: 'center', paddingTop: 60 }}>
+          <Image
+            source={require('../../assets/images/icon.png')}
+            style={{ width: 200, height: 200, borderRadius: 42 }}
+            resizeMode="contain"
+          />
+          <Text style={{ marginTop: 24, fontSize: 22, fontWeight: '700', color: textColor, letterSpacing: -0.2 }}>
+            {title}
+          </Text>
+          <Text style={{ marginTop: 6, fontSize: 14, color: '#8E8E93', opacity: subtitle ? 1 : 0 }}>
+            {subtitle ?? ' '}
+          </Text>
+          <Animated.View style={[{ flexDirection: 'row', marginTop: 24 }, shakeStyle]}>
+            {Array.from({ length: PIN_LENGTH }).map((_, i) => (
+              <PinDot key={i} filled={i < digits.length} isDark={isDark} />
+            ))}
+          </Animated.View>
+          <View style={{ height: 22, justifyContent: 'center', marginTop: 8 }}>
+            {error ? <Text style={{ fontSize: 13, color: '#FF3B30' }}>{error}</Text> : null}
           </View>
         </View>
 
-        {/* Log out — only on lock screen (not setup) */}
-        {!isSetup ? (
-          <Pressable onPress={handleForgetCode} style={{ marginTop: 32 }} hitSlop={10}>
-            <Text style={{
-              fontSize: 15,
-              color: '#AEAEAE',
-              textDecorationLine: 'underline',
-            }}>
-              {t('profile.signOut')}
-            </Text>
-          </Pressable>
-        ) : null}
+        {/* ── Bottom: numpad + sign out ── */}
+        <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: 36 }}>
+          {/* Numpad */}
+          <View style={{ width: screenW }}>
+            {([[1, 2, 3], [4, 5, 6], [7, 8, 9]] as number[][]).map((row, ri) => (
+              <View key={ri} style={{ flexDirection: 'row' }}>
+                {row.map((n) => (
+                  <View key={n} style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => handleDigit(String(n))}
+                      style={{ width: BTN, height: BTN, borderRadius: BTN / 2, backgroundColor: numBg, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Text style={{ fontSize: FONT_SZ, fontWeight: '300', color: BLUE, includeFontPadding: false }}>
+                        {String(n)}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ))}
+
+            {/* Bottom row */}
+            <View style={{ flexDirection: 'row' }}>
+              <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
+                {!isSetup ? (
+                  <Pressable onPress={handleForgetCode} hitSlop={12}>
+                    <Text style={{ fontSize: 13, fontWeight: '500', color: BLUE, textAlign: 'center', lineHeight: 18 }}>
+                      {t('pin.forget')}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => handleDigit('0')}
+                  style={{ width: BTN, height: BTN, borderRadius: BTN / 2, backgroundColor: numBg, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: FONT_SZ, fontWeight: '300', color: BLUE, includeFontPadding: false }}>0</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ width: CELL_W, height: CELL_H, alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableOpacity activeOpacity={0.7} onPress={handleDelete}
+                  style={{ width: BTN, height: BTN, borderRadius: BTN / 2, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Ionicons name="backspace-outline" size={ICON_SZ} color={iconColor} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* Sign out */}
+          {!isSetup ? (
+            <Pressable onPress={handleForgetCode} style={{ alignSelf: 'center', marginTop: 20 }} hitSlop={10}>
+              <Text style={{ fontSize: 15, color: '#AEAEAE', textDecorationLine: 'underline' }}>
+                {t('profile.signOut')}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
 
       </Animated.View>
     </View>
