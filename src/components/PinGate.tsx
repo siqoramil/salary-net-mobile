@@ -226,7 +226,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
         {/* Logo */}
         <Image
           source={require('../../assets/images/icon.png')}
-          style={{ width: 100, height: 100, borderRadius: 22, marginBottom: 16 }}
+          style={{ width: 140, height: 140, borderRadius: 30, marginBottom: 16 }}
           resizeMode="contain"
         />
 
