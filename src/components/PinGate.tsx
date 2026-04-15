@@ -175,8 +175,8 @@ export function PinGate({ children }: { children: React.ReactNode }) {
 
   // ─── Grid ─────────────────────────────────────────────────────────────────
   const CELL_W  = Math.floor(screenW / 3);
-  const CELL_H  = Math.round(CELL_W * 1.08);
-  const BTN     = Math.round(CELL_W * 0.76);
+  const CELL_H  = Math.round(CELL_W * 0.88);
+  const BTN     = Math.round(CELL_W * 0.56);
   const ICON_SZ = Math.round(BTN * 0.36);
   const FONT_SZ = Math.round(BTN * 0.38);
 
