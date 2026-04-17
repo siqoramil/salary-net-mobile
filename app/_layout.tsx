@@ -26,6 +26,7 @@ import { ConfirmDialog } from '../src/components/ui/ConfirmDialog';
 import { AddExpenseSheet } from '../src/components/expense/AddExpenseSheet';
 import { useUIStore } from '../src/stores/uiStore';
 import { hydrateStorage, storage, StorageKeys } from '../src/lib/storage';
+import { revenuecatService } from '../src/revenuecat/revenuecat.service';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -93,6 +94,7 @@ export default function RootLayout() {
       await hydrateStorage();
       hydrateLocale();
       hydrateTheme();
+      revenuecatService.init();
       setStorageReady(true);
     })();
   }, [hydrateTheme, hydrateLocale]);

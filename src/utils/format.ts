@@ -1,4 +1,4 @@
-import type { Currency } from '../types/auth';
+import type { Currency } from '../services/auth/auth.types';
 
 const localeByCurrency: Record<Currency, string> = {
   UZS: 'uz-UZ',

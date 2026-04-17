@@ -1,4 +1,4 @@
-import type { Currency } from './auth';
+import type { Currency } from '../auth/auth.types';
 
 export type ExpenseCategoryId =
   | 'food'

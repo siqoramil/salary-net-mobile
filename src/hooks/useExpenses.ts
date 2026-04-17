@@ -4,8 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { expenseApi, type ListExpensesParams } from '../services/expense.service';
-import type { CreateExpensePayload, Expense } from '../types/expense';
+import { expenseApi, type ListExpensesParams } from '../services/expense/expense.service';
+import type { CreateExpensePayload, Expense } from '../services/expense/expense.types';
 
 export const expenseKeys = {
   all: ['expenses'] as const,

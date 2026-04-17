@@ -7,7 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
-import { authApi } from '../../src/services/auth.service';
+import { authApi } from '../../src/services/auth/auth.service';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useUIStore } from '../../src/stores/uiStore';
 

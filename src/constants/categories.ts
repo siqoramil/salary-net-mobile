@@ -1,4 +1,4 @@
-import type { ExpenseCategoryId } from '../types/expense';
+import type { ExpenseCategoryId } from '../services/expense/expense.types';
 
 export interface CategoryDef {
   id: ExpenseCategoryId;

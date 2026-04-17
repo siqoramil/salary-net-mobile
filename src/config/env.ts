@@ -52,6 +52,16 @@ if (!__DEV__ && !/^https:\/\//i.test(API_URL)) {
   );
 }
 
+function resolveRevenueCatKey(): string {
+  const key = Platform.select({
+    ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
+    android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
+  });
+  return key ?? '';
+}
+
 export const env = {
   API_URL,
+  REVENUECAT_KEY: resolveRevenueCatKey(),
+  PRO_ENTITLEMENT_ID: 'Ramils Pro',
 };

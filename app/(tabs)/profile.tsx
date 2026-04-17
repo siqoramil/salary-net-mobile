@@ -1,23 +1,23 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Constants from 'expo-constants';
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as ImagePicker from 'expo-image-picker';
-import Constants from 'expo-constants';
 
+import { api } from '@/src/api/api';
 import { BottomSheet } from '@/src/components/ui/BottomSheet';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
-import { UserAvatar } from '@/src/components/ui/UserAvatar';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
+import { UserAvatar } from '@/src/components/ui/UserAvatar';
+import { authApi } from '@/src/services/auth/auth.service';
+import { uploadApi } from '@/src/services/upload/upload.service';
 import { useAuthStore } from '@/src/stores/authStore';
-import { useThemeStore, type ThemeMode } from '@/src/stores/themeStore';
 import { useLocaleStore, type Locale } from '@/src/stores/localeStore';
+import { useThemeStore, type ThemeMode } from '@/src/stores/themeStore';
 import { useUIStore } from '@/src/stores/uiStore';
-import { authApi } from '@/src/services/auth.service';
-import { api } from '@/src/services/api';
-import { uploadApi } from '@/src/services/upload.service';
 
 const THEME_LABELS: Record<ThemeMode, string> = {
   system: 'profile.themeSystem',

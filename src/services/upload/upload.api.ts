@@ -1,5 +1,5 @@
-import { api } from './api';
-import { env } from '../config/env';
+import { api } from '../../api/api';
+import { env } from '../../config/env';
 
 export const uploadApi = {
   /**

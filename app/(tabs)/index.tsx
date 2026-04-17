@@ -26,8 +26,9 @@ import { useExpenseSummary, useExpenses, useDeleteExpense } from '@/src/hooks/us
 import { CATEGORY_BY_ID } from '@/src/constants/categories';
 import { formatTime, groupByDay } from '@/src/utils/format';
 import { MoneyText } from '@/src/components/ui/MoneyText';
-import type { Expense } from '@/src/types/expense';
+import type { Expense } from '@/src/services/expense/expense.types';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
+import { BalanceAmountSkeleton, HomeListSkeleton } from '@/src/components/ui/HomeScreenSkeleton';
 import { EditExpenseSheet } from '@/src/components/expense/EditExpenseSheet';
 import { UserAvatar } from '@/src/components/ui/UserAvatar';
 
@@ -108,7 +109,7 @@ export default function HomeScreen() {
           </Text>
 
           {summaryQuery.isLoading ? (
-            <LoadingSpinner color="#fff" className="mt-3" />
+            <BalanceAmountSkeleton />
           ) : (
             <View className="mt-2">
               <MoneyText
@@ -170,7 +171,7 @@ export default function HomeScreen() {
 
         {/* Expense list */}
         {listQuery.isLoading ? (
-          <LoadingSpinner size="large" className="mt-10" />
+          <HomeListSkeleton />
         ) : groups.length === 0 ? (
           <View className="mx-5 mt-6 items-center rounded-[20px] bg-white dark:bg-[#1C1C1E] px-8 py-12">
             <View className="h-20 w-20 items-center justify-center rounded-full bg-[#F2F2F7] dark:bg-[#2C2C2E]">

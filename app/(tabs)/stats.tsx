@@ -12,10 +12,15 @@ import {
 import { CATEGORY_BY_ID } from '@/src/constants/categories';
 import { MoneyText } from '@/src/components/ui/MoneyText';
 import { BarChart } from '@/src/components/charts/BarChart';
-import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { DateTimePicker } from '@/src/components/ui/DateTimePicker';
-import type { ExpenseCategoryId } from '@/src/types/expense';
-import type { Currency } from '@/src/types/auth';
+import {
+  StatValueSkeleton,
+  ChartSkeleton,
+  CategorySkeleton,
+  BreakdownSkeleton,
+} from '@/src/components/ui/StatsScreenSkeleton';
+import type { ExpenseCategoryId } from '@/src/services/expense/expense.types';
+import type { Currency } from '@/src/services/auth/auth.types';
 
 type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -337,6 +342,9 @@ export default function StatsScreen() {
         </Animated.View>
 
         {/* Trend bar chart */}
+        {isLoading ? (
+          <ChartSkeleton />
+        ) : (
         <Animated.View
           entering={FadeInUp.delay(80).duration(320)}
           className="mx-5 mt-4 rounded-[22px] bg-white p-5 dark:bg-[#1C1C1E]"
@@ -369,9 +377,12 @@ export default function StatsScreen() {
             />
           </View>
         </Animated.View>
+        )}
 
         {/* Donut + legend */}
-        {slices.length > 0 ? (
+        {isLoading ? (
+          <CategorySkeleton />
+        ) : slices.length > 0 ? (
           <Animated.View
             entering={FadeInUp.delay(160).duration(320)}
             className="mx-5 mt-4 rounded-[22px] bg-white p-5 dark:bg-[#1C1C1E]"
@@ -455,7 +466,9 @@ export default function StatsScreen() {
         ) : null}
 
         {/* Category breakdown with progress */}
-        {slices.length > 0 ? (
+        {isLoading ? (
+          <BreakdownSkeleton />
+        ) : slices.length > 0 ? (
           <Animated.View
             entering={FadeInUp.delay(240).duration(320)}
             className="mx-5 mt-4 rounded-[22px] bg-white p-5 dark:bg-[#1C1C1E]"
@@ -765,7 +778,7 @@ function StatRow({
           alignItems: 'flex-end',
         }}
       >
-        {isLoading ? <LoadingSpinner size="small" /> : children}
+        {isLoading ? <StatValueSkeleton /> : children}
       </View>
     </Wrapper>
   );

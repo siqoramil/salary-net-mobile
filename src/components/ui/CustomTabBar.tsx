@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -8,18 +8,20 @@ import Animated, {
   useSharedValue,
   withSequence,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 
 import { useThemeStore } from '../../stores/themeStore';
 import { useUIStore } from '../../stores/uiStore';
 
 const SPRING_CONFIG = { damping: 15, stiffness: 200 };
-const TAB_BAR_HEIGHT = 50;
-const CORNER_RADIUS = 23;
-const NOTCH_RADIUS = 26;
-const NOTCH_LEAD = 14;
-const FAB_SIZE = 54;
-const FAB_OVERLAP = 20;
+const TAB_BAR_HEIGHT = 64;
+const CORNER_RADIUS = 28;
+const NOTCH_RADIUS = 28;
+const NOTCH_LEAD = 16;
+const FAB_SIZE = 58;
+const FAB_OVERLAP = 22;
+const ACTIVE_GRADIENT = ['#0A84FF', '#0051D5'] as const;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -64,29 +66,37 @@ function TabItem({
   inactiveTint: string;
 }) {
   const progress = useSharedValue(isFocused ? 1 : 0);
-  const scale = useSharedValue(1);
+  const press = useSharedValue(1);
 
   useEffect(() => {
     progress.value = withSpring(isFocused ? 1 : 0, SPRING_CONFIG);
   }, [isFocused, progress]);
 
   const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value * (1 + progress.value * 0.1) }],
+    transform: [
+      { scale: press.value * (1 + progress.value * 0.08) },
+      { translateY: -progress.value * 2 },
+    ],
   }));
 
-  const dotStyle = useAnimatedStyle(() => ({
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: 0.55 + progress.value * 0.45,
+    transform: [{ translateY: -progress.value * 1 }],
+  }));
+
+  const indicatorStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ scale: progress.value }],
+    transform: [{ scaleX: 0.4 + progress.value * 0.6 }],
   }));
 
   const handlePress = () => {
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    scale.value = withSpring(0.85, { damping: 15, stiffness: 400 });
-    setTimeout(() => {
-      scale.value = withSpring(1, SPRING_CONFIG);
-    }, 80);
+    press.value = withSequence(
+      withTiming(0.86, { duration: 80 }),
+      withSpring(1, SPRING_CONFIG),
+    );
     onPress();
   };
 
@@ -97,26 +107,47 @@ function TabItem({
       accessibilityRole="button"
       accessibilityState={isFocused ? { selected: true } : {}}
       accessibilityLabel={label}
-      style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: 10,
+      }}
     >
-      <Animated.View style={iconStyle}>
-        {icon({
-          color: isFocused ? activeTint : inactiveTint,
-          size: 26,
-        })}
-      </Animated.View>
       <Animated.View
         style={[
           {
-            width: 4,
-            height: 4,
+            position: 'absolute',
+            top: 0,
+            width: 22,
+            height: 3,
             borderRadius: 2,
             backgroundColor: activeTint,
-            marginTop: 3,
           },
-          dotStyle,
+          indicatorStyle,
         ]}
       />
+      <Animated.View style={iconStyle}>
+        {icon({
+          color: isFocused ? activeTint : inactiveTint,
+          size: 24,
+        })}
+      </Animated.View>
+      <Animated.Text
+        numberOfLines={1}
+        style={[
+          {
+            marginTop: 3,
+            fontSize: 10,
+            fontWeight: isFocused ? '700' : '500',
+            color: isFocused ? activeTint : inactiveTint,
+            letterSpacing: 0.1,
+          },
+          labelStyle,
+        ]}
+      >
+        {label}
+      </Animated.Text>
     </Pressable>
   );
 }
@@ -124,9 +155,13 @@ function TabItem({
 function CenterFab() {
   const openAddExpense = useUIStore((s) => s.openAddExpense);
   const scale = useSharedValue(1);
+  const rotate = useSharedValue(0);
 
   const fabStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [
+      { scale: scale.value },
+      { rotate: `${rotate.value}deg` },
+    ],
   }));
 
   const handlePress = () => {
@@ -134,8 +169,12 @@ function CenterFab() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     scale.value = withSequence(
-      withSpring(0.9, { damping: 15, stiffness: 400 }),
+      withSpring(0.88, { damping: 15, stiffness: 400 }),
       withSpring(1, { damping: 12, stiffness: 200 }),
+    );
+    rotate.value = withSequence(
+      withTiming(90, { duration: 140 }),
+      withTiming(0, { duration: 220 }),
     );
     openAddExpense();
   };
@@ -150,21 +189,48 @@ function CenterFab() {
           width: FAB_SIZE,
           height: FAB_SIZE,
           borderRadius: FAB_SIZE / 2,
-          backgroundColor: '#007AFF',
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: '#007AFF',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.4,
-          shadowRadius: 12,
-          elevation: 12,
+          shadowColor: ACTIVE_GRADIENT[1],
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.45,
+          shadowRadius: 14,
+          elevation: 14,
+          overflow: 'hidden',
         },
         fabStyle,
       ]}
     >
-      <Text style={{ color: '#fff', fontSize: 28, fontWeight: '300', lineHeight: 32 }}>
-        +
-      </Text>
+      <Svg width={FAB_SIZE} height={FAB_SIZE} style={{ position: 'absolute' }}>
+        <Defs>
+          <LinearGradient id="fabGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={ACTIVE_GRADIENT[0]} />
+            <Stop offset="1" stopColor={ACTIVE_GRADIENT[1]} />
+          </LinearGradient>
+        </Defs>
+        <Path
+          d={`M ${FAB_SIZE / 2} 0 A ${FAB_SIZE / 2} ${FAB_SIZE / 2} 0 1 0 ${FAB_SIZE / 2} ${FAB_SIZE} A ${FAB_SIZE / 2} ${FAB_SIZE / 2} 0 1 0 ${FAB_SIZE / 2} 0 Z`}
+          fill="url(#fabGrad)"
+        />
+      </Svg>
+      <View
+        style={{
+          width: 22,
+          height: 2.5,
+          borderRadius: 2,
+          backgroundColor: '#fff',
+          position: 'absolute',
+        }}
+      />
+      <View
+        style={{
+          width: 2.5,
+          height: 22,
+          borderRadius: 2,
+          backgroundColor: '#fff',
+          position: 'absolute',
+        }}
+      />
     </AnimatedPressable>
   );
 }
@@ -179,13 +245,13 @@ export function CustomTabBar({
 
   const focusedOptions = descriptors[state.routes[state.index].key].options;
   const activeTint =
-    (focusedOptions.tabBarActiveTintColor as string) ?? '#007AFF';
+    (focusedOptions.tabBarActiveTintColor as string) ?? ACTIVE_GRADIENT[0];
   const inactiveTint =
     (focusedOptions.tabBarInactiveTintColor as string) ?? '#8E8E93';
 
   const middleIndex = Math.floor(state.routes.length / 2);
   const fillColor = isDark ? '#1C1C1E' : '#FFFFFF';
-  const strokeColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+  const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
 
   const onBarLayout = (e: LayoutChangeEvent) => {
     const w = Math.round(e.nativeEvent.layout.width);
@@ -198,8 +264,8 @@ export function CustomTabBar({
       style={{
         position: 'absolute',
         bottom: Platform.OS === 'ios' ? 28 : 16,
-        left: 20,
-        right: 20,
+        left: 16,
+        right: 16,
       }}
     >
       <View
@@ -207,10 +273,10 @@ export function CustomTabBar({
         style={{
           height: TAB_BAR_HEIGHT,
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: isDark ? 0.3 : 0.1,
-          shadowRadius: 20,
-          elevation: 10,
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: isDark ? 0.4 : 0.12,
+          shadowRadius: 24,
+          elevation: 12,
         }}
       >
         {barWidth > 0 ? (
@@ -231,10 +297,9 @@ export function CustomTabBar({
         <View
           style={{
             flexDirection: 'row',
-            alignItems: 'flex-end',
+            alignItems: 'stretch',
             height: TAB_BAR_HEIGHT,
-            paddingHorizontal: 8,
-            paddingBottom: 8,
+            paddingHorizontal: 6,
           }}
         >
           {state.routes.flatMap((route, index) => {
@@ -297,7 +362,6 @@ export function CustomTabBar({
         </View>
       </View>
 
-      {/* Floating FAB — sits in the notch */}
       <View
         pointerEvents="box-none"
         style={{

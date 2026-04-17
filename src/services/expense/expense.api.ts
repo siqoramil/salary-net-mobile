@@ -1,10 +1,10 @@
-import { api } from './api';
+import { api } from '../../api/api';
 import type {
-  CreateExpensePayload,
-  Expense,
-  ExpenseListResponse,
-  ExpenseSummary,
-} from '../types/expense';
+    CreateExpensePayload,
+    Expense,
+    ExpenseListResponse,
+    ExpenseSummary,
+} from './expense.types';
 
 export interface ListExpensesParams {
   limit?: number;

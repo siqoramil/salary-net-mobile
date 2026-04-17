@@ -32,10 +32,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="debtors"
         options={{
-          title: t('tabs.chat'),
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="sparkles" color={color} />,
+          title: t('tabs.debtors'),
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="banknote" color={color} />,
         }}
       />
       <Tabs.Screen

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { secureTokens, secureUser } from '../lib/secureTokens';
-import type { AuthResponse, User } from '../types/auth';
+import type { AuthResponse, User } from '../services/auth/auth.types';
 
 interface AuthState {
   user: User | null;

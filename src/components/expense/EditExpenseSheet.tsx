@@ -16,10 +16,10 @@ import { DateTimePicker } from '../ui/DateTimePicker';
 import { CURRENCIES, EXPENSE_CATEGORIES } from '../../constants/categories';
 import { useUpdateExpense } from '../../hooks/useExpenses';
 import { useUIStore } from '../../stores/uiStore';
-import { uploadApi } from '../../services/upload.service';
+import { uploadApi } from '../../services/upload/upload.service';
 import { formatAmountInput } from '../../utils/format';
-import type { Currency } from '../../types/auth';
-import type { Expense, ExpenseCategoryId } from '../../types/expense';
+import type { Currency } from '../../services/auth/auth.types';
+import type { Expense, ExpenseCategoryId } from '../../services/expense/expense.types';
 
 interface Props {
   expense: Expense | null;

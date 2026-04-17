@@ -7,8 +7,8 @@ import {
   Pressable,
   Text,
   View,
-  useColorScheme,
 } from 'react-native';
+import { useThemeStore } from '../../stores/themeStore';
 
 const ITEM_HEIGHT = 36;
 const VISIBLE_ITEMS = 5;
@@ -138,7 +138,7 @@ export function DateTimePicker({
   cancelLabel = 'Cancel',
   dateOnly = false,
 }: Props) {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
   const [viewYear, setViewYear] = useState(value.getFullYear());
   const [viewMonth, setViewMonth] = useState(value.getMonth());
   const [selectedDay, setSelectedDay] = useState(value.getDate());

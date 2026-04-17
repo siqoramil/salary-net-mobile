@@ -17,10 +17,10 @@ import { CURRENCIES, EXPENSE_CATEGORIES } from '../../constants/categories';
 import { useCreateExpense } from '../../hooks/useExpenses';
 import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
-import { uploadApi } from '../../services/upload.service';
+import { uploadApi } from '../../services/upload/upload.service';
 import { formatAmountInput } from '../../utils/format';
-import type { Currency } from '../../types/auth';
-import type { ExpenseCategoryId } from '../../types/expense';
+import type { Currency } from '../../services/auth/auth.types';
+import type { ExpenseCategoryId } from '../../services/expense/expense.types';
 
 interface Props {
   visible: boolean;

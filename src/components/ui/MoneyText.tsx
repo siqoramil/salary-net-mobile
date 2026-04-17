@@ -1,7 +1,7 @@
 import { Text, View, useColorScheme } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { formatCompactMoneyParts, formatMoneyParts } from '../../utils/format';
-import type { Currency } from '../../types/auth';
+import type { Currency } from '../../services/auth/auth.types';
 
 interface Props {
   amount: number;

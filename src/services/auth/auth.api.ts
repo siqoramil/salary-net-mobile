@@ -1,5 +1,5 @@
-import { api } from './api';
-import type { AuthResponse, Locale } from '../types/auth';
+import { api } from '../../api/api';
+import type { AuthResponse, Locale } from './auth.types';
 
 export interface SignUpPayload {
   fullName: string;

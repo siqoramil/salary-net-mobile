@@ -26,6 +26,7 @@ const MAPPING = {
   'pencil': 'edit',
   'gearshape.fill': 'settings',
   'bell.fill': 'notifications',
+  'banknote': 'payments',
 } as IconMapping;
 
 /**
