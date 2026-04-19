@@ -80,6 +80,11 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             secureTextEntry={hidden}
             autoCapitalize={isPassword ? 'none' : props.autoCapitalize}
             {...props}
+            // Transparent TextInput background softens the iOS autofill /
+            // Strong-Password yellow highlight that paints the TextInput's
+            // own layer. Kept after spread so caller-provided style merges
+            // on top but the transparent fallback always applies.
+            style={[{ backgroundColor: 'transparent' }, props.style as object]}
           />
           {isPassword ? (
             <Pressable onPress={() => setHidden((v) => !v)} hitSlop={12}>

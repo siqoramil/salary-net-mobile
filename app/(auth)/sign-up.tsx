@@ -86,6 +86,8 @@ export default function SignUp() {
             value={fullName}
             onChangeText={setFullName}
             onBlur={() => setTouched((v) => ({ ...v, name: true }))}
+            autoComplete="name"
+            textContentType="name"
             placeholder={t('auth.placeholderName')}
             error={nameError}
           />
@@ -97,6 +99,8 @@ export default function SignUp() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="email"
+            textContentType="username"
             placeholder={t('auth.placeholderEmail')}
             error={emailError}
           />
@@ -106,6 +110,8 @@ export default function SignUp() {
             onChangeText={setPassword}
             onBlur={() => setTouched((v) => ({ ...v, password: true }))}
             isPassword
+            autoComplete="new-password"
+            textContentType="newPassword"
             placeholder={t('auth.placeholderPassword')}
             error={passwordError}
           />
@@ -115,6 +121,8 @@ export default function SignUp() {
             onChangeText={setConfirmPassword}
             onBlur={() => setTouched((v) => ({ ...v, confirm: true }))}
             isPassword
+            autoComplete="new-password"
+            textContentType="newPassword"
             placeholder={t('auth.placeholderConfirmPassword')}
             error={confirmError}
           />

@@ -177,7 +177,17 @@
     "verify": "验证",
     "resendCode": "重新发送",
     "sending": "发送中…",
-    "emailChangeConfirmed": "邮箱已更新"
+    "emailChangeConfirmed": "邮箱已更新",
+    "deleteAccount": "删除账户",
+    "deleteAccountTitle": "删除您的账户？",
+    "deleteAccountWarning": "这将永久删除您的个人资料、消费记录、债务、预算和聊天历史。此操作无法撤销。",
+    "changeEmail": "更改邮箱",
+    "changeEmailDesc": "我们将向您的新邮箱发送 8 位验证码以确认更改。",
+    "currentEmail": "当前邮箱",
+    "newEmail": "新邮箱",
+    "deleteCodeSent": "我们已向 {{email}} 发送了 8 位验证码。请在下方输入以永久删除您的账户。",
+    "sendCode": "发送验证码",
+    "accountDeleted": "账户已删除"
   },
   "debtors": {
     "title": "借贷记录",

@@ -177,7 +177,17 @@
     "verify": "Подтвердить",
     "resendCode": "Отправить код снова",
     "sending": "Отправка…",
-    "emailChangeConfirmed": "Email обновлён"
+    "emailChangeConfirmed": "Email обновлён",
+    "deleteAccount": "Удалить аккаунт",
+    "deleteAccountTitle": "Удалить ваш аккаунт?",
+    "deleteAccountWarning": "Это безвозвратно удалит ваш профиль, расходы, долги, бюджеты и историю чата. Действие нельзя отменить.",
+    "changeEmail": "Сменить email",
+    "changeEmailDesc": "Мы отправим 8-значный код на ваш новый email для подтверждения.",
+    "currentEmail": "Текущий email",
+    "newEmail": "Новый email",
+    "deleteCodeSent": "Мы отправили 8-значный код на {{email}}. Введите его ниже, чтобы окончательно удалить аккаунт.",
+    "sendCode": "Отправить код",
+    "accountDeleted": "Аккаунт удалён"
   },
   "biometric": {
     "unlockPrompt": "Разблокировать Salary Net",

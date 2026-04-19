@@ -177,7 +177,17 @@
     "verify": "Verificar",
     "resendCode": "Reenviar código",
     "sending": "Enviando…",
-    "emailChangeConfirmed": "Email actualizado"
+    "emailChangeConfirmed": "Email actualizado",
+    "deleteAccount": "Eliminar cuenta",
+    "deleteAccountTitle": "¿Eliminar tu cuenta?",
+    "deleteAccountWarning": "Esto borrará permanentemente tu perfil, gastos, deudas, presupuestos y el historial del chat. Esta acción no se puede deshacer.",
+    "changeEmail": "Cambiar email",
+    "changeEmailDesc": "Enviaremos un código de 8 caracteres a tu nuevo email para confirmar el cambio.",
+    "currentEmail": "Email actual",
+    "newEmail": "Nuevo email",
+    "deleteCodeSent": "Enviamos un código de 8 caracteres a {{email}}. Introdúcelo abajo para eliminar tu cuenta de forma permanente.",
+    "sendCode": "Enviar código",
+    "accountDeleted": "Cuenta eliminada"
   },
   "debtors": {
     "title": "Deudas",

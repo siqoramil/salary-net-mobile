@@ -34,4 +34,18 @@ export const authApi = {
     const { data } = await api.post<{ ok: true }>('/auth/logout', { refreshToken });
     return data;
   },
+
+  async requestAccountDelete(currentPassword: string): Promise<{ ok: true; email: string }> {
+    const { data } = await api.post<{ ok: true; email: string }>('/users/me/delete/request', {
+      currentPassword,
+    });
+    return data;
+  },
+
+  async confirmAccountDelete(code: string): Promise<{ ok: true }> {
+    const { data } = await api.delete<{ ok: true }>('/users/me', {
+      data: { code },
+    });
+    return data;
+  },
 };

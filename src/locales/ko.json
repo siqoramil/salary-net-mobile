@@ -177,7 +177,17 @@
     "verify": "확인",
     "resendCode": "코드 재전송",
     "sending": "전송 중…",
-    "emailChangeConfirmed": "이메일이 업데이트되었습니다"
+    "emailChangeConfirmed": "이메일이 업데이트되었습니다",
+    "deleteAccount": "계정 삭제",
+    "deleteAccountTitle": "계정을 삭제하시겠습니까?",
+    "deleteAccountWarning": "프로필, 지출, 부채, 예산 및 채팅 기록이 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "changeEmail": "이메일 변경",
+    "changeEmailDesc": "변경을 확인하기 위해 새 이메일로 8자리 코드를 보냅니다.",
+    "currentEmail": "현재 이메일",
+    "newEmail": "새 이메일",
+    "deleteCodeSent": "{{email}} 로 8자리 코드를 보냈습니다. 계정을 영구 삭제하려면 아래에 입력하세요.",
+    "sendCode": "코드 보내기",
+    "accountDeleted": "계정이 삭제되었습니다"
   },
   "debtors": {
     "title": "채무 기록",

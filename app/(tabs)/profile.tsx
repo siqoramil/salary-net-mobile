@@ -55,7 +55,9 @@ export default function ProfileScreen() {
   const queryClient = useQueryClient();
 
   const [passwordModal, setPasswordModal] = useState(false);
+  const [emailModal, setEmailModal] = useState(false);
   const [profileModal, setProfileModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
   const [langSheet, setLangSheet] = useState(false);
   const [themeSheet, setThemeSheet] = useState(false);
 
@@ -214,6 +216,14 @@ export default function ProfileScreen() {
         <SectionHeader label={t('profile.security')} />
         <View className="mx-4 overflow-hidden rounded-[16px] bg-white dark:bg-[#1C1C1E]">
           <SettingsRow
+            emoji="✉️"
+            color="#007AFF"
+            label={t('profile.changeEmail')}
+            value={user?.email}
+            onPress={() => setEmailModal(true)}
+          />
+          <RowDivider />
+          <SettingsRow
             emoji="🔑"
             color="#FF9500"
             label={t('profile.changePassword')}
@@ -255,29 +265,50 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* Sign out */}
-        <View className="mx-4 mt-8">
+        {/* Account actions */}
+        <SectionHeader label={t('profile.account')} />
+        <View className="mx-4" style={{ gap: 10 }}>
           <Pressable
             onPress={onLogout}
-            className="active:opacity-80"
+            className="flex-row items-center justify-center rounded-[16px] bg-white py-[15px] active:opacity-80 dark:bg-[#1C1C1E]"
             style={{
-              borderRadius: 16,
-              backgroundColor: '#FF3B30',
-              paddingVertical: 15,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              shadowColor: '#FF3B30',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.35,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.06,
               shadowRadius: 14,
-              elevation: 8,
+              elevation: 3,
+              borderWidth: 1,
+              borderColor: 'rgba(255,59,48,0.18)',
             }}
           >
-            <Text style={{ fontSize: 18, color: '#fff' }}>↩</Text>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.2 }}>
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: 'rgba(255,59,48,0.12)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 10,
+              }}
+            >
+              <Text style={{ fontSize: 13, color: '#FF3B30', fontWeight: '700' }}>↩</Text>
+            </View>
+            <Text
+              className="text-[16px] font-semibold text-[#FF3B30]"
+              style={{ letterSpacing: 0.2 }}
+            >
               {t('profile.signOut')}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setDeleteModal(true)}
+            className="flex-row items-center justify-center rounded-[16px] py-[12px] active:opacity-60"
+          >
+            <Text style={{ fontSize: 13, color: '#FF3B30', marginRight: 6 }}>🗑</Text>
+            <Text className="text-[13px] font-semibold text-[#FF3B30]">
+              {t('profile.deleteAccount')}
             </Text>
           </Pressable>
         </View>
@@ -383,6 +414,37 @@ export default function ProfileScreen() {
           })}
         </View>
       </BottomSheet>
+
+      {/* Change Email Modal */}
+      <ChangeEmailModal
+        visible={emailModal}
+        currentEmail={user?.email ?? ''}
+        onClose={() => setEmailModal(false)}
+        onSuccess={(updated) => {
+          updateUser(updated);
+          setEmailModal(false);
+          showToast({
+            type: 'success',
+            title: t('common.success'),
+            message: t('profile.emailChangeConfirmed'),
+          });
+        }}
+      />
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        visible={deleteModal}
+        onClose={() => setDeleteModal(false)}
+        onDeleted={async () => {
+          setDeleteModal(false);
+          clear();
+          queryClient.clear();
+          showToast({
+            type: 'success',
+            title: t('profile.accountDeleted'),
+          });
+        }}
+      />
 
       {/* Edit Profile Modal */}
       <EditProfileModal
@@ -722,6 +784,363 @@ function EditProfileModal({
               loading={verifyMutation.isPending}
               disabled={!canVerify}
               onPress={() => verifyMutation.mutate()}
+            />
+          </View>
+        </>
+      )}
+    </BottomSheet>
+  );
+}
+
+function ChangeEmailModal({
+  visible,
+  currentEmail,
+  onClose,
+  onSuccess,
+}: {
+  visible: boolean;
+  currentEmail: string;
+  onClose: () => void;
+  onSuccess: (updated: { fullName: string; email: string; emailVerified: boolean }) => void;
+}) {
+  const { t } = useTranslation();
+  const [step, setStep] = useState<'form' | 'verify'>('form');
+  const [newEmail, setNewEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+
+  const reset = () => {
+    setStep('form');
+    setNewEmail('');
+    setCode('');
+    setError('');
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const requestMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/users/me/email/request-change', { newEmail: newEmail.trim().toLowerCase() });
+    },
+    onSuccess: () => {
+      setError('');
+      setCode('');
+      setStep('verify');
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post('/users/me/email/confirm-change', { code: code.trim() });
+      return data as { fullName: string; email: string; emailVerified: boolean };
+    },
+    onSuccess: (data) => {
+      onSuccess(data);
+      reset();
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/users/me/email/request-change', { newEmail: newEmail.trim().toLowerCase() });
+    },
+    onSuccess: () => {
+      setError('');
+      setCode('');
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim());
+  const isDifferent = newEmail.trim().toLowerCase() !== currentEmail.toLowerCase();
+  const canRequest = emailValid && isDifferent && !requestMutation.isPending;
+  const canVerify = code.trim().length === 8 && !verifyMutation.isPending;
+
+  return (
+    <BottomSheet visible={visible} onClose={handleClose}>
+      <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+
+      {step === 'form' ? (
+        <>
+          <Text className="text-center text-[20px] font-bold text-black dark:text-white">
+            {t('profile.changeEmail')}
+          </Text>
+          <Text className="mt-2 text-center text-[13px] leading-[18px] text-[#8E8E93]">
+            {t('profile.changeEmailDesc')}
+          </Text>
+
+          <View className="mt-4">
+            <Input
+              label={t('profile.currentEmail')}
+              value={currentEmail}
+              editable={false}
+            />
+            <Input
+              label={t('profile.newEmail')}
+              value={newEmail}
+              onChangeText={setNewEmail}
+              placeholder={t('auth.placeholderEmail')}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              error={newEmail.length > 0 && !emailValid ? t('auth.invalidEmail') : undefined}
+            />
+            {error ? (
+              <Text className="mb-2 text-center text-[13px] text-[#FF3B30]">{error}</Text>
+            ) : null}
+          </View>
+
+          <View className="mt-2 flex-row gap-3">
+            <Button
+              title={t('common.cancel')}
+              variant="secondary"
+              className="flex-1"
+              onPress={handleClose}
+            />
+            <Button
+              title={t('profile.sendCode')}
+              className="flex-1"
+              loading={requestMutation.isPending}
+              disabled={!canRequest}
+              onPress={() => requestMutation.mutate()}
+            />
+          </View>
+        </>
+      ) : (
+        <>
+          <Text className="text-center text-[20px] font-bold text-black dark:text-white">
+            {t('profile.verifyEmailTitle')}
+          </Text>
+          <Text className="mt-2 text-center text-[13px] leading-[18px] text-[#8E8E93]">
+            {t('profile.verifyEmailDesc', { email: newEmail.trim().toLowerCase() })}
+          </Text>
+
+          <View className="mt-4">
+            <Input
+              label={t('profile.verificationCode')}
+              value={code}
+              onChangeText={(v) =>
+                setCode(v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8))
+              }
+              placeholder="ABCD2345"
+              autoCapitalize="characters"
+              maxLength={8}
+            />
+            {error ? (
+              <Text className="mb-2 text-center text-[13px] text-[#FF3B30]">{error}</Text>
+            ) : null}
+
+            <Pressable
+              onPress={() => resendMutation.mutate()}
+              disabled={resendMutation.isPending}
+              className="mt-1 items-center py-2 active:opacity-60"
+            >
+              <Text className="text-[13px] font-semibold text-[#007AFF]">
+                {resendMutation.isPending ? t('profile.sending') : t('profile.resendCode')}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="mt-2 flex-row gap-3">
+            <Button
+              title={t('common.cancel')}
+              variant="secondary"
+              className="flex-1"
+              onPress={handleClose}
+            />
+            <Button
+              title={t('profile.verify')}
+              className="flex-1"
+              loading={verifyMutation.isPending}
+              disabled={!canVerify}
+              onPress={() => verifyMutation.mutate()}
+            />
+          </View>
+        </>
+      )}
+    </BottomSheet>
+  );
+}
+
+function DeleteAccountModal({
+  visible,
+  onClose,
+  onDeleted,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const { t } = useTranslation();
+  const [step, setStep] = useState<'password' | 'verify'>('password');
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [sentToEmail, setSentToEmail] = useState('');
+  const [error, setError] = useState('');
+
+  const reset = () => {
+    setStep('password');
+    setPassword('');
+    setCode('');
+    setSentToEmail('');
+    setError('');
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const requestMutation = useMutation({
+    mutationFn: () => authApi.requestAccountDelete(password),
+    onSuccess: (data) => {
+      setError('');
+      setCode('');
+      setSentToEmail(data.email);
+      setStep('verify');
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: () => authApi.confirmAccountDelete(code.trim()),
+    onSuccess: () => {
+      reset();
+      onDeleted();
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: () => authApi.requestAccountDelete(password),
+    onSuccess: () => {
+      setError('');
+      setCode('');
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      setError(e.response?.data?.message ?? t('common.error'));
+    },
+  });
+
+  const canRequest = password.length >= 1 && !requestMutation.isPending;
+  const canConfirm = code.trim().length === 8 && !confirmMutation.isPending;
+
+  return (
+    <BottomSheet visible={visible} onClose={handleClose}>
+      <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+
+      <View className="items-center">
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: 'rgba(255,59,48,0.12)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 10,
+          }}
+        >
+          <Text style={{ fontSize: 28 }}>⚠️</Text>
+        </View>
+        <Text className="text-center text-[20px] font-bold text-black dark:text-white">
+          {t('profile.deleteAccountTitle')}
+        </Text>
+        <Text className="mt-2 text-center text-[13px] leading-[18px] text-[#8E8E93]">
+          {step === 'password'
+            ? t('profile.deleteAccountWarning')
+            : t('profile.deleteCodeSent', { email: sentToEmail })}
+        </Text>
+      </View>
+
+      {step === 'password' ? (
+        <>
+          <View className="mt-4">
+            <Input
+              label={t('profile.currentPassword')}
+              value={password}
+              onChangeText={setPassword}
+              isPassword
+              placeholder="••••••••"
+            />
+            {error ? (
+              <Text className="mb-2 text-center text-[13px] text-[#FF3B30]">{error}</Text>
+            ) : null}
+          </View>
+
+          <View className="mt-2 flex-row gap-3">
+            <Button
+              title={t('common.cancel')}
+              variant="secondary"
+              className="flex-1"
+              onPress={handleClose}
+            />
+            <Button
+              title={t('profile.sendCode')}
+              variant="destructive"
+              className="flex-1"
+              loading={requestMutation.isPending}
+              disabled={!canRequest}
+              onPress={() => requestMutation.mutate()}
+            />
+          </View>
+        </>
+      ) : (
+        <>
+          <View className="mt-4">
+            <Input
+              label={t('profile.verificationCode')}
+              value={code}
+              onChangeText={(v) =>
+                setCode(v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8))
+              }
+              placeholder="ABCD2345"
+              autoCapitalize="characters"
+              maxLength={8}
+            />
+            {error ? (
+              <Text className="mb-2 text-center text-[13px] text-[#FF3B30]">{error}</Text>
+            ) : null}
+
+            <Pressable
+              onPress={() => resendMutation.mutate()}
+              disabled={resendMutation.isPending}
+              className="mt-1 items-center py-2 active:opacity-60"
+            >
+              <Text className="text-[13px] font-semibold text-[#007AFF]">
+                {resendMutation.isPending ? t('profile.sending') : t('profile.resendCode')}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="mt-2 flex-row gap-3">
+            <Button
+              title={t('common.cancel')}
+              variant="secondary"
+              className="flex-1"
+              onPress={handleClose}
+            />
+            <Button
+              title={t('profile.deleteAccount')}
+              variant="destructive"
+              className="flex-1"
+              loading={confirmMutation.isPending}
+              disabled={!canConfirm}
+              onPress={() => confirmMutation.mutate()}
             />
           </View>
         </>

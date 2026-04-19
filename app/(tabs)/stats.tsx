@@ -153,8 +153,6 @@ export default function StatsScreen() {
   const [period, setPeriod] = useState<Period>('monthly');
   const [pickedDate, setPickedDate] = useState<Date | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [expandedTotal, setExpandedTotal] = useState(false);
-  const [expandedAvg, setExpandedAvg] = useState(false);
 
   // When a specific date is picked, override period range with that day.
   const range = useMemo(() => {
@@ -302,15 +300,12 @@ export default function StatsScreen() {
             isLoading={isLoading}
             shadow={cardShadow}
             accent="#007AFF"
-            onPress={() => setExpandedTotal((v) => !v)}
-            expanded={expandedTotal}
           >
             <MoneyText
               amount={totalAmount}
               currency={totalCurrency}
-              size={expandedTotal ? 13 : 15}
+              size={15}
               weight="700"
-              compact={!expandedTotal}
             />
           </StatRow>
           <StatRow
@@ -318,15 +313,12 @@ export default function StatsScreen() {
             isLoading={isLoading}
             shadow={cardShadow}
             accent="#34C759"
-            onPress={() => setExpandedAvg((v) => !v)}
-            expanded={expandedAvg}
           >
             <MoneyText
               amount={Math.round(avgPerDay)}
               currency={totalCurrency}
-              size={expandedAvg ? 13 : 15}
+              size={15}
               weight="700"
-              compact={!expandedAvg}
             />
           </StatRow>
           <StatRow
@@ -734,24 +726,16 @@ function StatRow({
   isLoading,
   shadow,
   accent,
-  onPress,
-  expanded,
 }: {
   label: string;
   children: React.ReactNode;
   isLoading?: boolean;
   shadow: object;
   accent: string;
-  onPress?: () => void;
-  expanded?: boolean;
 }) {
-  const Wrapper: typeof Pressable | typeof View = onPress ? Pressable : View;
   return (
-    <Wrapper
-      onPress={onPress}
-      className={`flex-row items-center overflow-hidden rounded-[16px] bg-white px-[16px] py-[14px] dark:bg-[#1C1C1E] ${
-        onPress ? 'active:opacity-80' : ''
-      }`}
+    <View
+      className="flex-row items-center overflow-hidden rounded-[16px] bg-white px-[16px] py-[14px] dark:bg-[#1C1C1E]"
       style={shadow}
     >
       <View
@@ -766,20 +750,20 @@ function StatRow({
       <Text
         className="text-[12px] font-semibold uppercase tracking-wider text-[#8E8E93]"
         numberOfLines={1}
-        style={{ flexShrink: 1, flexGrow: expanded ? 0 : 1 }}
+        style={{ flexShrink: 1 }}
       >
         {label}
       </Text>
       <View
         style={{
           marginLeft: 12,
-          flex: expanded ? 1 : 0,
+          flex: 1,
           flexShrink: 1,
           alignItems: 'flex-end',
         }}
       >
         {isLoading ? <StatValueSkeleton /> : children}
       </View>
-    </Wrapper>
+    </View>
   );
 }

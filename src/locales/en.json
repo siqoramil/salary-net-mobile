@@ -177,7 +177,17 @@
     "verify": "Verify",
     "resendCode": "Resend code",
     "sending": "Sending…",
-    "emailChangeConfirmed": "Email updated"
+    "emailChangeConfirmed": "Email updated",
+    "deleteAccount": "Delete Account",
+    "deleteAccountTitle": "Delete your account?",
+    "deleteAccountWarning": "This will permanently erase your profile, expenses, debts, budgets, and chat history. This action cannot be undone.",
+    "changeEmail": "Change email",
+    "changeEmailDesc": "We'll send an 8-character code to your new email to confirm the change.",
+    "currentEmail": "Current email",
+    "newEmail": "New email",
+    "deleteCodeSent": "We sent an 8-character code to {{email}}. Enter it below to permanently delete your account.",
+    "sendCode": "Send code",
+    "accountDeleted": "Account deleted"
   },
   "pin": {
     "createTitle": "Create PIN code",

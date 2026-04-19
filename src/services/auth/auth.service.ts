@@ -19,6 +19,12 @@ export const authService = {
   logout(refreshToken?: string): Promise<{ ok: true }> {
     return authApi.logout(refreshToken);
   },
+  requestAccountDelete(currentPassword: string): Promise<{ ok: true; email: string }> {
+    return authApi.requestAccountDelete(currentPassword);
+  },
+  confirmAccountDelete(code: string): Promise<{ ok: true }> {
+    return authApi.confirmAccountDelete(code);
+  },
 };
 
 export { authApi };

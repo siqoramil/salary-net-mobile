@@ -177,7 +177,17 @@
     "verify": "Vérifier",
     "resendCode": "Renvoyer le code",
     "sending": "Envoi…",
-    "emailChangeConfirmed": "Email mis à jour"
+    "emailChangeConfirmed": "Email mis à jour",
+    "deleteAccount": "Supprimer le compte",
+    "deleteAccountTitle": "Supprimer votre compte ?",
+    "deleteAccountWarning": "Cela effacera définitivement votre profil, dépenses, dettes, budgets et historique de chat. Cette action est irréversible.",
+    "changeEmail": "Changer l'email",
+    "changeEmailDesc": "Nous enverrons un code de 8 caractères à votre nouvel email pour confirmer le changement.",
+    "currentEmail": "Email actuel",
+    "newEmail": "Nouvel email",
+    "deleteCodeSent": "Nous avons envoyé un code de 8 caractères à {{email}}. Saisissez-le ci-dessous pour supprimer définitivement votre compte.",
+    "sendCode": "Envoyer le code",
+    "accountDeleted": "Compte supprimé"
   },
   "debtors": {
     "title": "Dettes",

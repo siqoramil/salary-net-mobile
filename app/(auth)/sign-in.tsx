@@ -62,6 +62,8 @@ export default function SignIn() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="email"
+            textContentType="username"
             placeholder={t('auth.placeholderEmail')}
             error={emailError}
           />
@@ -71,6 +73,8 @@ export default function SignIn() {
             onChangeText={setPassword}
             onBlur={() => setTouched((v) => ({ ...v, password: true }))}
             isPassword
+            autoComplete="current-password"
+            textContentType="password"
             placeholder={t('auth.placeholderPassword')}
             error={passwordError}
           />

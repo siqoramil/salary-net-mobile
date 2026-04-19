@@ -177,7 +177,17 @@
     "verify": "確認",
     "resendCode": "コードを再送信",
     "sending": "送信中…",
-    "emailChangeConfirmed": "メールアドレスを更新しました"
+    "emailChangeConfirmed": "メールアドレスを更新しました",
+    "deleteAccount": "アカウントを削除",
+    "deleteAccountTitle": "アカウントを削除しますか？",
+    "deleteAccountWarning": "これにより、プロフィール、支出、負債、予算、チャット履歴が完全に削除されます。この操作は取り消せません。",
+    "changeEmail": "メールアドレスを変更",
+    "changeEmailDesc": "変更を確認するため、新しいメールアドレスに 8 桁のコードを送信します。",
+    "currentEmail": "現在のメールアドレス",
+    "newEmail": "新しいメールアドレス",
+    "deleteCodeSent": "{{email}} に 8 桁のコードを送信しました。アカウントを完全に削除するには、下に入力してください。",
+    "sendCode": "コードを送信",
+    "accountDeleted": "アカウントを削除しました"
   },
   "debtors": {
     "title": "貸し借り記録",
