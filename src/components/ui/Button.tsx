@@ -1,4 +1,4 @@
-import { Pressable, Text, View, useColorScheme, type PressableProps } from 'react-native';
+import { Pressable, Text, useColorScheme, type PressableProps } from 'react-native';
 import { LoadingSpinner } from './LoadingSpinner';
 
 interface ButtonProps extends Omit<PressableProps, 'children'> {
@@ -34,47 +34,30 @@ export function Button({
   const isDisabled = disabled || loading;
   const bg = variant === 'secondary' && isDark ? '#38383A' : VARIANT_COLORS[variant];
 
-  const hasGlow = variant === 'primary' || variant === 'destructive';
+  const hasGlow = (variant === 'primary' || variant === 'destructive') && !isDisabled;
   const glowColor = variant === 'destructive' ? '#FF3B30' : '#007AFF';
 
   return (
     <Pressable
       disabled={isDisabled}
-      className={`h-[52px] rounded-[16px] items-center justify-center overflow-hidden active:opacity-90 ${
-        isDisabled ? 'opacity-50' : ''
+      className={`h-[54px] rounded-full items-center justify-center active:opacity-85 ${
+        isDisabled ? 'opacity-40' : ''
       } ${className}`}
       style={[
-        {
-          backgroundColor: bg,
-          ...(hasGlow && !isDisabled
-            ? {
-                shadowColor: glowColor,
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.32,
-                shadowRadius: 16,
-                elevation: 8,
-              }
-            : {}),
-        },
+        { backgroundColor: bg },
+        hasGlow
+          ? {
+              shadowColor: glowColor,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.28,
+              shadowRadius: 16,
+              elevation: 8,
+            }
+          : null,
         style as object,
       ]}
       {...rest}
     >
-      {/* Subtle top highlight for solid variants — gives the pill a soft
-          lit-from-above look without pulling in a gradient dependency. */}
-      {hasGlow ? (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '55%',
-            backgroundColor: 'rgba(255,255,255,0.12)',
-          }}
-        />
-      ) : null}
       {loading ? (
         <LoadingSpinner
           color={variant === 'primary' || variant === 'destructive' ? '#fff' : '#007AFF'}
@@ -82,7 +65,7 @@ export function Button({
       ) : (
         <Text
           className={`text-[17px] font-semibold ${textVariants[variant]}`}
-          style={{ letterSpacing: 0.2 }}
+          style={{ letterSpacing: 0.1 }}
         >
           {title}
         </Text>

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
@@ -157,8 +158,58 @@ export default function ProfileScreen() {
                   <LoadingSpinner color="#fff" />
                 </View>
               ) : (
-                <View className="absolute -bottom-1 -right-1 h-[26px] w-[26px] items-center justify-center rounded-full bg-white">
-                  <Text style={{ fontSize: 12 }}>📷</Text>
+                <View
+                  className="absolute -bottom-1 -right-1 h-[26px] w-[26px] items-center justify-center rounded-full bg-white"
+                  style={{
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 2,
+                    elevation: 2,
+                  }}
+                >
+                  {/* Pencil edit glyph built from Views — crisp at any DPR
+                      and matches the custom iconography in the app shell. */}
+                  <View style={{ width: 13, height: 13 }}>
+                    {/* Main shaft: slanted thick stroke */}
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 4,
+                        left: 0,
+                        width: 13,
+                        height: 3,
+                        backgroundColor: '#007AFF',
+                        borderRadius: 0.5,
+                        transform: [{ rotate: '-45deg' }],
+                      }}
+                    />
+                    {/* Eraser cap at top-right end */}
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 1,
+                        right: 0.5,
+                        width: 3.5,
+                        height: 3,
+                        backgroundColor: '#0051D5',
+                        borderRadius: 0.5,
+                        transform: [{ rotate: '-45deg' }],
+                      }}
+                    />
+                    {/* Tip dot at bottom-left end */}
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: 0.5,
+                        left: 0.5,
+                        width: 2.5,
+                        height: 2.5,
+                        backgroundColor: '#002D6E',
+                        borderRadius: 1.25,
+                      }}
+                    />
+                  </View>
                 </View>
               )}
             </Pressable>
@@ -265,52 +316,27 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* Account actions */}
+        {/* Account actions — premium paired cards with Ionicons */}
         <SectionHeader label={t('profile.account')} />
         <View className="mx-4" style={{ gap: 10 }}>
-          <Pressable
+          <AccountActionCard
+            icon="log-out-outline"
+            iconColor="#007AFF"
+            iconBg="rgba(0,122,255,0.12)"
+            title={t('profile.signOut')}
+            subtitle={t('profile.signOutSubtitle')}
+            titleColor="default"
             onPress={onLogout}
-            className="flex-row items-center justify-center rounded-[16px] bg-white py-[15px] active:opacity-80 dark:bg-[#1C1C1E]"
-            style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.06,
-              shadowRadius: 14,
-              elevation: 3,
-              borderWidth: 1,
-              borderColor: 'rgba(255,59,48,0.18)',
-            }}
-          >
-            <View
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: 12,
-                backgroundColor: 'rgba(255,59,48,0.12)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 10,
-              }}
-            >
-              <Text style={{ fontSize: 13, color: '#FF3B30', fontWeight: '700' }}>↩</Text>
-            </View>
-            <Text
-              className="text-[16px] font-semibold text-[#FF3B30]"
-              style={{ letterSpacing: 0.2 }}
-            >
-              {t('profile.signOut')}
-            </Text>
-          </Pressable>
-
-          <Pressable
+          />
+          <AccountActionCard
+            icon="trash-outline"
+            iconColor="#FF3B30"
+            iconBg="rgba(255,59,48,0.12)"
+            title={t('profile.deleteAccount')}
+            subtitle={t('profile.deleteAccountSubtitle')}
+            titleColor="destructive"
             onPress={() => setDeleteModal(true)}
-            className="flex-row items-center justify-center rounded-[16px] py-[12px] active:opacity-60"
-          >
-            <Text style={{ fontSize: 13, color: '#FF3B30', marginRight: 6 }}>🗑</Text>
-            <Text className="text-[13px] font-semibold text-[#FF3B30]">
-              {t('profile.deleteAccount')}
-            </Text>
-          </Pressable>
+          />
         </View>
 
         {/* App version footer */}
@@ -1248,5 +1274,82 @@ function InfoRow({
         {value}
       </Text>
     </View>
+  );
+}
+
+// Premium account-action card used for the Sign Out / Delete Account pair.
+// Structure is identical so the two feel unified; semantics come from color.
+function AccountActionCard({
+  icon,
+  iconColor,
+  iconBg,
+  title,
+  subtitle,
+  titleColor,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  iconBg: string;
+  title: string;
+  subtitle: string;
+  titleColor: 'default' | 'destructive';
+  onPress: () => void;
+}) {
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
+  const titleClr =
+    titleColor === 'destructive' ? '#FF3B30' : isDark ? '#FFFFFF' : '#000000';
+  const subtitleClr =
+    titleColor === 'destructive' ? 'rgba(255,59,48,0.72)' : '#8E8E93';
+  const chevronClr = titleColor === 'destructive' ? 'rgba(255,59,48,0.45)' : '#C7C7CC';
+
+  return (
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center rounded-[16px] bg-white px-4 py-[14px] active:opacity-70 dark:bg-[#1C1C1E]"
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      }}
+    >
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          backgroundColor: iconBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: 14,
+        }}
+      >
+        <Ionicons name={icon} size={22} color={iconColor} />
+      </View>
+
+      <View className="flex-1">
+        <Text
+          style={{ fontSize: 16, fontWeight: '600', color: titleClr, letterSpacing: -0.1 }}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: '500',
+            color: subtitleClr,
+            marginTop: 2,
+          }}
+          numberOfLines={1}
+        >
+          {subtitle}
+        </Text>
+      </View>
+
+      <Ionicons name="chevron-forward" size={18} color={chevronClr} />
+    </Pressable>
   );
 }

@@ -20,6 +20,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
+import { Ionicons } from '@expo/vector-icons';
+
+import { BottomSheet } from '@/src/components/ui/BottomSheet';
 import { MoneyText } from '@/src/components/ui/MoneyText';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { DebtListSkeleton } from '@/src/components/ui/DebtorsScreenSkeleton';
@@ -330,11 +333,8 @@ function AddDebtModal({
             <Pressable
               onPress={handleClose}
               hitSlop={12}
-              style={({ pressed }) => ({
-                paddingVertical: 6,
-                paddingRight: 12,
-                opacity: pressed ? 0.5 : 1,
-              })}
+              className="active:opacity-50"
+              style={{ paddingVertical: 6, paddingRight: 12 }}
             >
               <Text style={{ fontSize: 16, fontWeight: '500', color: subtleText }}>
                 {t('common.cancel')}
@@ -358,20 +358,18 @@ function AddDebtModal({
               onPress={() => void handleSave()}
               disabled={createDebt.isPending}
               hitSlop={12}
-              style={({ pressed }) => ({
+              className="items-center rounded-[18px] active:opacity-70"
+              style={{
                 paddingVertical: 8,
                 paddingHorizontal: 18,
-                borderRadius: 18,
-                backgroundColor: canSave ? accent : (isDark ? '#2C2C2E' : '#E5E5EA'),
-                opacity: pressed ? 0.7 : 1,
+                backgroundColor: canSave ? accent : isDark ? '#2C2C2E' : '#E5E5EA',
                 shadowColor: accentDeep,
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: canSave ? 0.3 : 0,
                 shadowRadius: 8,
                 elevation: canSave ? 4 : 0,
                 minWidth: 64,
-                alignItems: 'center',
-              })}
+              }}
             >
               {createDebt.isPending ? (
                 <LoadingSpinner color="#fff" size="small" />
@@ -508,14 +506,12 @@ function AddDebtModal({
                     <Pressable
                       key={q}
                       onPress={() => handleQuickAmount(q)}
-                      style={({ pressed }) => ({
+                      className="rounded-full active:opacity-70"
+                      style={{
                         paddingHorizontal: 12,
                         paddingVertical: 6,
-                        borderRadius: 999,
-                        backgroundColor: pressed
-                          ? (isDark ? '#3A3A3C' : '#E5E5EA')
-                          : (isDark ? '#2C2C2E' : '#F2F2F7'),
-                      })}
+                        backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+                      }}
                     >
                       <Text style={{ fontSize: 12, fontWeight: '700', color: textColor }}>
                         +{compactAmountLabel(q)}
@@ -528,16 +524,14 @@ function AddDebtModal({
                         if (Platform.OS === 'ios') Haptics.selectionAsync();
                         setAmountText('');
                       }}
-                      style={({ pressed }) => ({
+                      className="rounded-full active:opacity-70"
+                      style={{
                         paddingHorizontal: 12,
                         paddingVertical: 6,
-                        borderRadius: 999,
-                        backgroundColor: pressed
-                          ? (isDark ? '#3A3A3C' : '#E5E5EA')
-                          : 'transparent',
+                        backgroundColor: 'transparent',
                         borderWidth: 1,
                         borderColor: isDark ? '#2C2C2E' : '#E5E5EA',
-                      })}
+                      }}
                     >
                       <Text style={{ fontSize: 12, fontWeight: '700', color: subtleText }}>
                         ↺
@@ -612,18 +606,14 @@ function AddDebtModal({
                   if (Platform.OS === 'ios') Haptics.selectionAsync();
                   setDatePickerOpen(true);
                 }}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
+                className="flex-row items-center rounded-[14px] px-4 active:opacity-70"
+                style={{
                   backgroundColor: cardBg,
-                  borderRadius: 14,
-                  paddingHorizontal: 16,
                   height: 56,
-                  opacity: pressed ? 0.7 : 1,
-                })}
+                }}
               >
                 <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: textColor }}>
-                  {smartDateLabel(date, 'Today', 'Yesterday')}
+                  {smartDateLabel(date, t('debtors.today'), t('debtors.yesterday'))}
                 </Text>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: subtleText, marginRight: 8 }}>
                   {date.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
@@ -682,26 +672,651 @@ function AddDebtModal({
   );
 }
 
-// ─── Debt Card ───────────────────────────────────────────────────────────────
+// ─── Balance Hero ────────────────────────────────────────────────────────────
 
-function DebtCard({ record }: { record: DebtRecord }) {
+function BalanceHero({ records }: { records: DebtRecord[] }) {
+  const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
+  const cardBg = isDark ? '#1C1C1E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#000000';
+  const subtleText = '#8E8E93';
+
+  // Compute totals per currency from pending records only — settled debts
+  // don't contribute to the current balance the user cares about.
+  const byCurrency = useMemo(() => {
+    const map = new Map<string, { owedToMe: number; iOwe: number }>();
+    records.forEach((r) => {
+      if (r.isSettled) return;
+      const entry = map.get(r.currency) ?? { owedToMe: 0, iOwe: 0 };
+      if (r.type === 'lent') entry.owedToMe += r.amount;
+      else entry.iOwe += r.amount;
+      map.set(r.currency, entry);
+    });
+    const arr = Array.from(map.entries());
+    arr.sort((a, b) => {
+      const ta = a[1].owedToMe + a[1].iOwe;
+      const tb = b[1].owedToMe + b[1].iOwe;
+      return tb - ta;
+    });
+    return arr;
+  }, [records]);
+
+  const primary = byCurrency[0];
+  const primaryCurrency = (primary?.[0] ?? 'UZS') as Currency;
+  const owed = primary?.[1].owedToMe ?? 0;
+  const iOwe = primary?.[1].iOwe ?? 0;
+  const net = owed - iOwe;
+  const netColor = net > 0 ? '#34C759' : net < 0 ? '#FF3B30' : textColor;
+  const otherCount = Math.max(0, byCurrency.length - 1);
+
+  return (
+    <View
+      style={{
+        marginHorizontal: 16,
+        marginTop: 12,
+        padding: 20,
+        borderRadius: 20,
+        backgroundColor: cardBg,
+      }}
+    >
+      {/* Top label */}
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: '700',
+          color: subtleText,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+        }}
+      >
+        {t('debtors.netBalance')}
+      </Text>
+
+      {/* Big net amount */}
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 6 }}>
+        {net !== 0 ? (
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: '800',
+              color: netColor,
+              letterSpacing: -0.8,
+              marginRight: 2,
+            }}
+          >
+            {net > 0 ? '+' : '−'}
+          </Text>
+        ) : null}
+        <MoneyText
+          amount={Math.abs(net)}
+          currency={primaryCurrency}
+          size={32}
+          weight="800"
+          color={netColor}
+        />
+      </View>
+
+      {otherCount > 0 ? (
+        <Text style={{ fontSize: 12, color: subtleText, marginTop: 4, fontWeight: '500' }}>
+          {t('debtors.plusOtherCurrencies', { count: otherCount })}
+        </Text>
+      ) : null}
+
+      {/* Divider */}
+      <View
+        style={{
+          height: 0.5,
+          backgroundColor: isDark ? '#38383A' : '#EEEEF2',
+          marginTop: 18,
+          marginBottom: 14,
+        }}
+      />
+
+      {/* Two mini metrics side by side */}
+      <View style={{ flexDirection: 'row' }}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#34C759' }} />
+            <Text style={{ fontSize: 11, color: subtleText, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' }}>
+              {t('debtors.owedToMe')}
+            </Text>
+          </View>
+          <MoneyText
+            amount={owed}
+            currency={primaryCurrency}
+            size={17}
+            weight="700"
+            color={textColor}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF9500' }} />
+            <Text style={{ fontSize: 11, color: subtleText, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' }}>
+              {t('debtors.iOwe')}
+            </Text>
+          </View>
+          <MoneyText
+            amount={iOwe}
+            currency={primaryCurrency}
+            size={17}
+            weight="700"
+            color={textColor}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── Segmented tabs (Lent / Borrowed) ────────────────────────────────────────
+
+function SegmentedTabs({
+  activeType,
+  onChange,
+  lentCount,
+  borrowedCount,
+}: {
+  activeType: DebtType;
+  onChange: (t: DebtType) => void;
+  lentCount: number;
+  borrowedCount: number;
+}) {
+  const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
+  const trackBg = isDark ? '#1C1C1E' : '#EEEEF2';
+  const thumbBg = isDark ? '#3A3A3C' : '#FFFFFF';
+  const [width, setWidth] = useState(0);
+  const offset = useSharedValue(activeType === 'lent' ? 0 : 1);
+
+  useEffect(() => {
+    offset.value = withSpring(activeType === 'lent' ? 0 : 1, { damping: 22, stiffness: 220 });
+  }, [activeType, offset]);
+
+  const indicatorStyle = useAnimatedStyle(() => {
+    const halfW = width > 0 ? (width - 8) / 2 : 0;
+    return {
+      transform: [{ translateX: offset.value * halfW }],
+      width: halfW,
+    };
+  });
+
+  return (
+    <View
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={{
+        marginHorizontal: 16,
+        marginTop: 14,
+        flexDirection: 'row',
+        backgroundColor: trackBg,
+        borderRadius: 11,
+        padding: 4,
+        height: 40,
+      }}
+    >
+      {width > 0 ? (
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              top: 4,
+              left: 4,
+              bottom: 4,
+              borderRadius: 8,
+              backgroundColor: thumbBg,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+              elevation: 2,
+            },
+            indicatorStyle,
+          ]}
+        />
+      ) : null}
+      {(['lent', 'borrowed'] as DebtType[]).map((tt) => {
+        const isActive = activeType === tt;
+        const count = tt === 'lent' ? lentCount : borrowedCount;
+        const activeColor = isDark ? '#FFFFFF' : '#000000';
+        return (
+          <Pressable
+            key={tt}
+            onPress={() => {
+              if (Platform.OS === 'ios') Haptics.selectionAsync();
+              onChange(tt);
+            }}
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              zIndex: 1,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '600',
+                color: isActive ? activeColor : '#8E8E93',
+              }}
+            >
+              {tt === 'lent' ? t('debtors.tabLent') : t('debtors.tabBorrowed')}
+            </Text>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '700',
+                color: isActive ? '#8E8E93' : '#C7C7CC',
+                fontVariant: ['tabular-nums'],
+              }}
+            >
+              {count}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+// ─── Filter pills (Pending / Settled / All) ─────────────────────────────────
+
+function FilterPills({
+  value,
+  onChange,
+  counts,
+}: {
+  value: StatusFilter;
+  onChange: (v: StatusFilter) => void;
+  counts: { pending: number; settled: number; all: number };
+}) {
+  const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
+
+  const pills: { key: StatusFilter; labelKey: string }[] = [
+    { key: 'pending', labelKey: 'debtors.filterPending' },
+    { key: 'settled', labelKey: 'debtors.filterSettled' },
+    { key: 'all', labelKey: 'debtors.filterAll' },
+  ];
+
+  return (
+    <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginTop: 14 }}>
+      {pills.map((f) => {
+        const active = value === f.key;
+        const count = counts[f.key];
+        const bg = active ? '#007AFF' : isDark ? '#1C1C1E' : '#FFFFFF';
+        const textColor = active ? '#FFFFFF' : '#8E8E93';
+        const countColor = active ? 'rgba(255,255,255,0.7)' : isDark ? '#48484A' : '#C7C7CC';
+        return (
+          <Pressable
+            key={f.key}
+            onPress={() => {
+              if (Platform.OS === 'ios') Haptics.selectionAsync();
+              onChange(f.key);
+            }}
+            className="flex-row items-center rounded-full active:opacity-75"
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 7,
+              backgroundColor: bg,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: active ? '700' : '600',
+                color: textColor,
+                marginRight: 5,
+              }}
+            >
+              {t(f.labelKey)}
+            </Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: countColor, fontVariant: ['tabular-nums'] }}>
+              {count}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+// ─── Debt row (list cell) ────────────────────────────────────────────────────
+
+function DebtRow({
+  record,
+  onPress,
+  isLast,
+}: {
+  record: DebtRecord;
+  onPress: () => void;
+  isLast: boolean;
+}) {
   const { t, i18n } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
+  const textColor = isDark ? '#FFFFFF' : '#000000';
+  const subtleText = '#8E8E93';
+
+  const isLent = record.type === 'lent';
+  const amountColor = record.isSettled ? '#34C759' : isLent ? '#007AFF' : '#FF9500';
+  const avatarColor = record.isSettled ? '#34C759' : isLent ? '#007AFF' : '#FF9500';
+  const avatarBg = record.isSettled
+    ? 'rgba(52,199,89,0.12)'
+    : isLent
+      ? 'rgba(0,122,255,0.12)'
+      : 'rgba(255,149,10,0.12)';
+
+  const dateLabel = smartDateLabel(
+    new Date(record.date),
+    t('debtors.today'),
+    t('debtors.yesterday'),
+  );
+
+  const initial = record.personName.trim().charAt(0).toUpperCase() || '?';
+
+  return (
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center px-4 active:bg-[#F7F7FA] dark:active:bg-[#2C2C2E]"
+      style={{ paddingVertical: 12 }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: avatarBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: 12,
+        }}
+      >
+        <Text style={{ fontSize: 16, fontWeight: '700', color: avatarColor }}>
+          {initial}
+        </Text>
+        {record.isSettled ? (
+          <View
+            style={{
+              position: 'absolute',
+              bottom: -2,
+              right: -2,
+              width: 16,
+              height: 16,
+              borderRadius: 8,
+              backgroundColor: '#34C759',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 2,
+              borderColor: isDark ? '#1C1C1E' : '#FFFFFF',
+            }}
+          >
+            <Text style={{ fontSize: 8, color: '#FFFFFF', fontWeight: '900', lineHeight: 10 }}>
+              ✓
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={{ flex: 1, marginRight: 10 }}>
+        <Text style={{ fontSize: 15, fontWeight: '600', color: textColor }} numberOfLines={1}>
+          {record.personName}
+        </Text>
+        <Text style={{ fontSize: 12, color: subtleText, marginTop: 2 }} numberOfLines={1}>
+          {dateLabel}
+          {record.description ? ` · ${record.description}` : ''}
+        </Text>
+      </View>
+
+      <MoneyText
+        amount={record.amount}
+        currency={record.currency}
+        size={15}
+        weight="700"
+        color={amountColor}
+        prefix={record.isSettled ? '' : isLent ? '+' : '−'}
+      />
+      {!isLast ? null : null}
+    </Pressable>
+  );
+}
+
+// ─── Debt actions bottom sheet ──────────────────────────────────────────────
+
+function DebtActionSheet({
+  record,
+  onClose,
+  onSettle,
+  onDelete,
+}: {
+  record: DebtRecord | null;
+  onClose: () => void;
+  onSettle: () => void;
+  onDelete: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
+  const textColor = isDark ? '#FFFFFF' : '#000000';
+  const subtleText = '#8E8E93';
+
+  if (!record) return <BottomSheet visible={false} onClose={onClose}><View /></BottomSheet>;
+
+  const isLent = record.type === 'lent';
+  const accent = record.isSettled ? '#34C759' : isLent ? '#007AFF' : '#FF9500';
+  const accentBg = record.isSettled
+    ? 'rgba(52,199,89,0.14)'
+    : isLent
+      ? 'rgba(0,122,255,0.14)'
+      : 'rgba(255,149,10,0.14)';
+  const fullDate = new Date(record.date).toLocaleDateString(i18n.language, {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return (
+    <BottomSheet visible={record !== null} onClose={onClose}>
+      <View className="mb-4 self-center h-1 w-10 rounded-full bg-[#D1D1D6] dark:bg-[#48484A]" />
+
+      {/* Person + amount summary */}
+      <View style={{ alignItems: 'center', marginBottom: 18 }}>
+        <View
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            backgroundColor: accentBg,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 12,
+          }}
+        >
+          <Text style={{ fontSize: 24, fontWeight: '700', color: accent }}>
+            {record.personName.trim().charAt(0).toUpperCase() || '?'}
+          </Text>
+        </View>
+        <Text style={{ fontSize: 17, fontWeight: '700', color: textColor }}>
+          {record.personName}
+        </Text>
+        <View style={{ marginTop: 6 }}>
+          <MoneyText
+            amount={record.amount}
+            currency={record.currency}
+            size={26}
+            weight="800"
+            color={accent}
+            prefix={record.isSettled ? '' : isLent ? '+' : '−'}
+          />
+        </View>
+        <Text style={{ fontSize: 12, color: subtleText, marginTop: 4, fontWeight: '500' }}>
+          {fullDate}
+          {record.isSettled ? ` · ${t('debtors.settled')}` : ''}
+        </Text>
+        {record.description ? (
+          <Text
+            style={{
+              fontSize: 14,
+              color: subtleText,
+              marginTop: 12,
+              textAlign: 'center',
+              lineHeight: 19,
+              paddingHorizontal: 8,
+            }}
+          >
+            {record.description}
+          </Text>
+        ) : null}
+      </View>
+
+      {/* Actions */}
+      <View style={{ gap: 10 }}>
+        {!record.isSettled ? (
+          <Pressable
+            onPress={onSettle}
+            className="h-[54px] items-center justify-center rounded-[14px] active:opacity-85"
+            style={{
+              backgroundColor: '#34C759',
+              shadowColor: '#34C759',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.25,
+              shadowRadius: 12,
+              elevation: 6,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.1 }}>
+              {t('debtors.markSettled')}
+            </Text>
+          </Pressable>
+        ) : null}
+
+        <Pressable
+          onPress={onDelete}
+          className="h-[54px] items-center justify-center rounded-[14px] active:opacity-60"
+          style={{ borderWidth: 1.5, borderColor: '#FF3B30' }}
+        >
+          <Text style={{ fontSize: 16, fontWeight: '600', color: '#FF3B30' }}>
+            {t('common.delete')}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onClose}
+          className="h-[48px] items-center justify-center active:opacity-50"
+        >
+          <Text style={{ fontSize: 15, fontWeight: '500', color: subtleText }}>
+            {t('common.cancel')}
+          </Text>
+        </Pressable>
+      </View>
+    </BottomSheet>
+  );
+}
+
+// ─── Empty state ────────────────────────────────────────────────────────────
+
+function EmptyState({
+  type,
+  statusFilter,
+}: {
+  type: DebtType;
+  statusFilter: StatusFilter;
+}) {
+  const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
+  const textColor = isDark ? '#FFFFFF' : '#000000';
+
+  const isLent = type === 'lent';
+  const title =
+    statusFilter === 'settled'
+      ? t('debtors.noSettled')
+      : isLent
+        ? t('debtors.noRecordsLent')
+        : t('debtors.noRecordsBorrowed');
+  const desc =
+    statusFilter === 'settled'
+      ? undefined
+      : isLent
+        ? t('debtors.noRecordsLentDesc')
+        : t('debtors.noRecordsBorrowedDesc');
+
+  return (
+    <View style={{ alignItems: 'center', paddingHorizontal: 40, paddingTop: 60 }}>
+      <View
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: 36,
+          backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 14,
+        }}
+      >
+        <Text style={{ fontSize: 34 }}>{isLent ? '💸' : '🤝'}</Text>
+      </View>
+      <Text style={{ fontSize: 17, fontWeight: '700', color: textColor, textAlign: 'center' }}>
+        {title}
+      </Text>
+      {desc ? (
+        <Text
+          style={{
+            marginTop: 8,
+            fontSize: 14,
+            color: '#8E8E93',
+            textAlign: 'center',
+            lineHeight: 20,
+            maxWidth: 280,
+          }}
+        >
+          {desc}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+// ─── Main Screen ────────────────────────────────────────────────────────────
+
+export default function DebtorsScreen() {
+  const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === 'dark';
   const showConfirm = useUIStore((s) => s.showConfirm);
   const showToast = useUIStore((s) => s.showToast);
   const markSettled = useMarkSettled();
   const deleteDebt = useDeleteDebt();
-  const isDark = useThemeStore((s) => s.resolved) === 'dark';
 
-  const isLent = record.type === 'lent';
-  const accent = isLent ? '#007AFF' : '#FF9500';
-  const cardBg = isDark ? '#1C1C1E' : '#FFFFFF';
+  const [activeType, setActiveType] = useState<DebtType>('lent');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
+  const [addOpen, setAddOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<DebtRecord | null>(null);
+
+  // Single query for everything — cheap to derive counts + filtered list
+  // from one array, avoids a cascade of separate useDebtors() calls.
+  const { data: allDebts, isLoading } = useDebtors({});
+  const all = allDebts ?? [];
+
+  const lent = useMemo(() => all.filter((r) => r.type === 'lent'), [all]);
+  const borrowed = useMemo(() => all.filter((r) => r.type === 'borrowed'), [all]);
+  const typeRecords = activeType === 'lent' ? lent : borrowed;
+  const pendingList = useMemo(() => typeRecords.filter((r) => !r.isSettled), [typeRecords]);
+  const settledList = useMemo(() => typeRecords.filter((r) => r.isSettled), [typeRecords]);
+
+  const listRecords =
+    statusFilter === 'pending' ? pendingList : statusFilter === 'settled' ? settledList : typeRecords;
+
+  const sortedRecords = useMemo(
+    () => [...listRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [listRecords],
+  );
+
+  const bg = isDark ? '#000000' : '#F2F2F7';
   const textColor = isDark ? '#FFFFFF' : '#000000';
-
-  const recordDate = new Date(record.date);
-  const formattedDate = recordDate.toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const formattedTime = recordDate.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
+  const cardBg = isDark ? '#1C1C1E' : '#FFFFFF';
 
   const handleSettle = () => {
+    if (!selectedRecord) return;
+    const record = selectedRecord;
+    setSelectedRecord(null);
     showConfirm({
       title: t('debtors.confirmSettle'),
       message: t('debtors.confirmSettleDesc'),
@@ -718,7 +1333,11 @@ function DebtCard({ record }: { record: DebtRecord }) {
   };
 
   const handleDelete = () => {
+    if (!selectedRecord) return;
+    const record = selectedRecord;
+    setSelectedRecord(null);
     showConfirm({
+      variant: 'destructive',
       title: t('debtors.confirmDelete'),
       message: t('debtors.confirmDeleteDesc'),
       confirmLabel: t('common.delete'),
@@ -734,426 +1353,122 @@ function DebtCard({ record }: { record: DebtRecord }) {
   };
 
   return (
-    <View
-      style={{
-        borderRadius: 20,
-        backgroundColor: cardBg,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 2,
-      }}
-    >
-      {/* Left accent stripe */}
-      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: record.isSettled ? '#34C759' : accent }} />
-
-      <View style={{ padding: 16, paddingLeft: 20 }}>
-        {/* Top row: avatar + name/date + badge */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: record.isSettled ? '#34C75922' : `${accent}1A`, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: record.isSettled ? '#34C759' : accent }}>
-              {record.personName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: textColor }} numberOfLines={1}>
-              {record.personName}
-            </Text>
-            <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>
-              {formattedDate} · {formattedTime}
-            </Text>
-          </View>
-          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: record.isSettled ? '#34C75918' : `${accent}18` }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: record.isSettled ? '#34C759' : accent }}>
-              {record.isSettled ? t('debtors.settled') : t('debtors.pending')}
-            </Text>
-          </View>
-        </View>
-
-        {/* Amount */}
-        <View style={{ marginTop: 12 }}>
-          <MoneyText
-            amount={record.amount}
-            currency={record.currency as Currency}
-            size={24}
-            weight="800"
-            color={record.isSettled ? '#34C759' : accent}
-          />
-        </View>
-
-        {/* Description */}
-        {record.description ? (
-          <Text style={{ marginTop: 6, fontSize: 13, color: '#8E8E93', lineHeight: 18 }} numberOfLines={2}>
-            {record.description}
-          </Text>
-        ) : null}
-
-        {/* Actions */}
-        {!record.isSettled ? (
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-            <Pressable
-              onPress={handleSettle}
-              style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: '#34C75915' }}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#34C759' }}>
-                ✓ {t('debtors.markSettled')}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleDelete}
-              style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#FF3B3012' }}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#FF3B30' }}>{t('common.delete')}</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            onPress={handleDelete}
-            style={{ marginTop: 12, alignItems: 'center', paddingVertical: 9, borderRadius: 12, backgroundColor: '#FF3B3012' }}
-          >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#FF3B30' }}>{t('common.delete')}</Text>
-          </Pressable>
-        )}
-      </View>
-    </View>
-  );
-}
-
-// ─── Tab content ─────────────────────────────────────────────────────────────
-
-function DebtList({
-  debtType,
-  statusFilter,
-  onAdd,
-}: {
-  debtType: DebtType;
-  statusFilter: StatusFilter;
-  onAdd: () => void;
-}) {
-  const { t } = useTranslation();
-  const isDark = useThemeStore((s) => s.resolved) === 'dark';
-  const isLent = debtType === 'lent';
-  const accent = isLent ? '#007AFF' : '#FF9500';
-
-  const isSettled = statusFilter === 'all' ? undefined : statusFilter === 'settled';
-
-  const { data, isLoading } = useDebtors({ type: debtType, isSettled });
-  const records = data ?? [];
-
-  const emptyLabel = statusFilter === 'settled'
-    ? t('debtors.noSettled')
-    : isLent ? t('debtors.noRecordsLent') : t('debtors.noRecordsBorrowed');
-
-  const emptyDesc = statusFilter !== 'settled'
-    ? (isLent ? t('debtors.noRecordsLentDesc') : t('debtors.noRecordsBorrowedDesc'))
-    : undefined;
-
-  return (
-    <>
-      {/* List */}
-      {isLoading ? (
-        <DebtListSkeleton />
-      ) : records.length === 0 ? (
-        <Animated.View
-          entering={FadeInDown.duration(320)}
-          style={{
-            marginHorizontal: 20,
-            marginTop: 16,
-            alignItems: 'center',
-            borderRadius: 22,
-            backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-            paddingHorizontal: 32,
-            paddingVertical: 48,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
-            elevation: 2,
-          }}
-        >
-          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <Text style={{ fontSize: 36 }}>{isLent ? '💸' : '🤝'}</Text>
-          </View>
-          <Text style={{ fontSize: 17, fontWeight: '700', color: isDark ? '#FFFFFF' : '#000000', textAlign: 'center' }}>
-            {emptyLabel}
-          </Text>
-          {emptyDesc ? (
-            <Text style={{ marginTop: 8, fontSize: 14, color: '#8E8E93', textAlign: 'center', lineHeight: 20 }}>
-              {emptyDesc}
-            </Text>
-          ) : null}
-          <Pressable
-            onPress={onAdd}
-            style={{ marginTop: 24, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 999, backgroundColor: accent }}
-          >
-            <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>+ {t('debtors.addRecord')}</Text>
-          </Pressable>
-        </Animated.View>
-      ) : (
-        <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
-          {records.map((record, index) => (
-            <Animated.View key={record.id} entering={FadeInDown.delay(index * 40).duration(300)}>
-              <DebtCard record={record} />
-            </Animated.View>
-          ))}
-          {/* Add more button */}
-          <Pressable
-            onPress={onAdd}
-            style={{
-              marginTop: 4,
-              alignItems: 'center',
-              paddingVertical: 14,
-              borderRadius: 18,
-              borderWidth: 1.5,
-              borderColor: isDark ? '#38383A' : '#E5E5EA',
-              borderStyle: 'dashed',
-            }}
-          >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: accent }}>+ {t('debtors.addRecord')}</Text>
-          </Pressable>
-        </View>
-      )}
-    </>
-  );
-}
-
-// ─── Main Screen ─────────────────────────────────────────────────────────────
-
-function OverviewStats({
-  activeTab,
-  onTabChange,
-}: {
-  activeTab: DebtType;
-  onTabChange: (t: DebtType) => void;
-}) {
-  const { t } = useTranslation();
-  const isDark = useThemeStore((s) => s.resolved) === 'dark';
-  const cardBg = isDark ? '#1C1C1E' : '#FFFFFF';
-  const textColor = isDark ? '#FFFFFF' : '#000000';
-
-  const { data: lentData } = useDebtors({ type: 'lent', isSettled: false });
-  const { data: borrowedData } = useDebtors({ type: 'borrowed', isSettled: false });
-
-  const calcTotals = (records: DebtRecord[] | undefined) => {
-    const totals = (records ?? []).reduce<Record<string, number>>((acc, r) => {
-      acc[r.currency] = (acc[r.currency] ?? 0) + r.amount;
-      return acc;
-    }, {});
-    return Object.entries(totals);
-  };
-
-  const lentTotals = calcTotals(lentData);
-  const borrowedTotals = calcTotals(borrowedData);
-
-  const card = (
-    type: DebtType,
-    totals: Array<[string, number]>,
-    accent: string,
-    icon: string,
-    label: string,
-  ) => {
-    const isActive = activeTab === type;
-    return (
-      <Pressable
-        onPress={() => onTabChange(type)}
-        style={({ pressed }) => ({
-          flex: 1,
-          backgroundColor: isActive ? accent : cardBg,
-          borderRadius: 18,
-          padding: 14,
-          opacity: pressed ? 0.85 : 1,
-        })}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-          <View
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 10,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: isActive ? 'rgba(255,255,255,0.22)' : `${accent}18`,
-            }}
-          >
-            <Text style={{ fontSize: 16 }}>{icon}</Text>
-          </View>
-          <Text
-            style={{
-              marginLeft: 8,
-              fontSize: 11,
-              fontWeight: '800',
-              color: isActive ? 'rgba(255,255,255,0.85)' : '#8E8E93',
-              textTransform: 'uppercase',
-              letterSpacing: 0.6,
-            }}
-          >
-            {label}
-          </Text>
-        </View>
-        {totals.length === 0 ? (
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: '800',
-              color: isActive ? '#fff' : textColor,
-              letterSpacing: -0.5,
-            }}
-          >
-            0
-          </Text>
-        ) : (
-          totals.slice(0, 2).map(([cur, amt], i) => (
-            <MoneyText
-              key={cur}
-              amount={amt}
-              currency={cur as Currency}
-              size={i === 0 ? 22 : 14}
-              weight="800"
-              color={isActive ? '#fff' : textColor}
-              compact
-            />
-          ))
-        )}
-        {totals.length > 2 ? (
-          <Text
-            style={{
-              marginTop: 2,
-              fontSize: 11,
-              color: isActive ? 'rgba(255,255,255,0.7)' : '#8E8E93',
-              fontWeight: '600',
-            }}
-          >
-            +{totals.length - 2} more
-          </Text>
-        ) : null}
-      </Pressable>
-    );
-  };
-
-  return (
-    <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 20, marginTop: 14 }}>
-      {card('lent', lentTotals, '#007AFF', '💸', t('debtors.tabLent'))}
-      {card('borrowed', borrowedTotals, '#FF9500', '🤝', t('debtors.tabBorrowed'))}
-    </View>
-  );
-}
-
-export default function DebtorsScreen() {
-  const { t } = useTranslation();
-  const isDark = useThemeStore((s) => s.resolved) === 'dark';
-  const [activeTab, setActiveTab] = useState<DebtType>('lent');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
-  const [addModalOpen, setAddModalOpen] = useState(false);
-
-  const bg = isDark ? '#000000' : '#F2F2F7';
-  const textColor = isDark ? '#FFFFFF' : '#000000';
-  const subtleText = '#8E8E93';
-  const accent = activeTab === 'lent' ? '#007AFF' : '#FF9500';
-
-  const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
-    { key: 'pending', label: t('debtors.filterPending') },
-    { key: 'settled', label: t('debtors.filterSettled') },
-    { key: 'all', label: t('debtors.filterAll') },
-  ];
-
-  return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bg }} edges={['top']}>
-      {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 20,
-          paddingTop: 8,
-          paddingBottom: 4,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 30, fontWeight: '800', color: textColor, letterSpacing: -0.5 }}>
-            {t('debtors.title')}
-          </Text>
-          <Text style={{ fontSize: 13, color: subtleText, marginTop: 2, fontWeight: '500' }}>
-            {t('debtors.subtitle')}
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => setAddModalOpen(true)}
-          style={({ pressed }) => ({
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: accent,
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: accent,
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.35,
-            shadowRadius: 10,
-            elevation: 6,
-            opacity: pressed ? 0.85 : 1,
-          })}
-        >
-          <Text style={{ fontSize: 24, color: '#fff', lineHeight: 26, fontWeight: '300' }}>
-            +
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* Overview: two side-by-side cards */}
-      <OverviewStats activeTab={activeTab} onTabChange={setActiveTab} />
-
-      {/* Status filter pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 14, gap: 8 }}
-        style={{ flexGrow: 0 }}
-      >
-        {STATUS_FILTERS.map((f) => {
-          const isActive = statusFilter === f.key;
-          return (
-            <Pressable
-              key={f.key}
-              onPress={() => setStatusFilter(f.key)}
-              style={({ pressed }) => ({
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: isActive ? accent : isDark ? '#1C1C1E' : '#FFFFFF',
-                opacity: pressed ? 0.8 : 1,
-              })}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: isActive ? '800' : '600',
-                  color: isActive ? '#fff' : subtleText,
-                }}
-              >
-                {f.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
       <ScrollView
         contentContainerStyle={{ paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
       >
-        <DebtList
-          debtType={activeTab}
-          statusFilter={statusFilter}
-          onAdd={() => setAddModalOpen(true)}
+        {/* Header */}
+        <View
+          className="flex-row items-center"
+          style={{ paddingHorizontal: 20, paddingTop: 8 }}
+        >
+          <Text
+            style={{
+              flex: 1,
+              fontSize: 32,
+              fontWeight: '800',
+              color: textColor,
+              letterSpacing: -0.5,
+            }}
+          >
+            {t('debtors.title')}
+          </Text>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setAddOpen(true);
+            }}
+            className="items-center justify-center rounded-full active:opacity-85"
+            style={{
+              width: 38,
+              height: 38,
+              backgroundColor: '#007AFF',
+              shadowColor: '#007AFF',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.28,
+              shadowRadius: 10,
+              elevation: 6,
+            }}
+          >
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </Pressable>
+        </View>
+
+        {/* Balance hero */}
+        <Animated.View entering={FadeInUp.duration(260)}>
+          <BalanceHero records={all} />
+        </Animated.View>
+
+        {/* Segmented tabs */}
+        <SegmentedTabs
+          activeType={activeType}
+          onChange={setActiveType}
+          lentCount={lent.length}
+          borrowedCount={borrowed.length}
         />
+
+        {/* Status filter pills */}
+        <FilterPills
+          value={statusFilter}
+          onChange={setStatusFilter}
+          counts={{
+            pending: pendingList.length,
+            settled: settledList.length,
+            all: typeRecords.length,
+          }}
+        />
+
+        {/* List */}
+        {isLoading ? (
+          <View style={{ marginTop: 14 }}>
+            <DebtListSkeleton />
+          </View>
+        ) : sortedRecords.length === 0 ? (
+          <EmptyState type={activeType} statusFilter={statusFilter} />
+        ) : (
+          <View
+            style={{
+              marginHorizontal: 16,
+              marginTop: 14,
+              borderRadius: 16,
+              backgroundColor: cardBg,
+              overflow: 'hidden',
+            }}
+          >
+            {sortedRecords.map((record, idx) => (
+              <View key={record.id}>
+                {idx > 0 ? (
+                  <View
+                    style={{
+                      height: 0.5,
+                      backgroundColor: isDark ? '#38383A' : '#EEEEF2',
+                      marginLeft: 68,
+                    }}
+                  />
+                ) : null}
+                <DebtRow
+                  record={record}
+                  onPress={() => setSelectedRecord(record)}
+                  isLast={idx === sortedRecords.length - 1}
+                />
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
+      <DebtActionSheet
+        record={selectedRecord}
+        onClose={() => setSelectedRecord(null)}
+        onSettle={handleSettle}
+        onDelete={handleDelete}
+      />
+
       <AddDebtModal
-        visible={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        initialType={activeTab}
+        visible={addOpen}
+        onClose={() => setAddOpen(false)}
+        initialType={activeType}
       />
     </SafeAreaView>
   );

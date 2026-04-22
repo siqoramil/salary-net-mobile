@@ -251,25 +251,51 @@ function SwipeableExpenseRow({
   const rowBg = isDark ? '#1C1C1E' : '#FFFFFF';
   const cat = CATEGORY_BY_ID[expense.category];
   const translateX = useSharedValue(0);
+  // Position when the gesture began — required so a swipe continues smoothly
+  // from the current state instead of jumping to a translation relative to 0.
+  const startX = useSharedValue(0);
 
   const pan = Gesture.Pan()
     .activeOffsetX([-15, 15])
     .failOffsetY([-10, 10])
+    .onBegin(() => {
+      startX.value = translateX.value;
+    })
     .onUpdate((e) => {
-      const raw = e.translationX * SWIPE_FRICTION;
-      if (raw < 0) {
-        translateX.value = Math.max(raw, -ACTION_WIDTH);
-      } else {
-        translateX.value = Math.min(raw, ACTION_WIDTH);
-      }
+      const next = startX.value + e.translationX * SWIPE_FRICTION;
+      // If a side is already open, only allow the gesture to close it —
+      // crossing through 0 to the opposite side requires a fresh swipe.
+      // Prevents the "swipe right to close Edit → accidentally reveals
+      // Delete" jump that felt broken.
+      let minX = -ACTION_WIDTH;
+      let maxX = ACTION_WIDTH;
+      if (startX.value > 0) minX = 0;
+      if (startX.value < 0) maxX = 0;
+      translateX.value = Math.max(minX, Math.min(next, maxX));
     })
     .onEnd(() => {
-      if (translateX.value < -ACTION_WIDTH / 2) {
-        translateX.value = withSpring(-ACTION_WIDTH, SNAP_SPRING);
-      } else if (translateX.value > ACTION_WIDTH / 2) {
-        translateX.value = withSpring(ACTION_WIDTH, SNAP_SPRING);
+      const current = translateX.value;
+      if (startX.value > 0) {
+        // Started with Edit open — snap to open or closed only.
+        translateX.value = withSpring(
+          current > ACTION_WIDTH / 2 ? ACTION_WIDTH : 0,
+          SNAP_SPRING,
+        );
+      } else if (startX.value < 0) {
+        // Started with Delete open — snap to open or closed only.
+        translateX.value = withSpring(
+          current < -ACTION_WIDTH / 2 ? -ACTION_WIDTH : 0,
+          SNAP_SPRING,
+        );
       } else {
-        translateX.value = withSpring(0, SNAP_SPRING);
+        // Started closed — normal 3-way snap.
+        if (current < -ACTION_WIDTH / 2) {
+          translateX.value = withSpring(-ACTION_WIDTH, SNAP_SPRING);
+        } else if (current > ACTION_WIDTH / 2) {
+          translateX.value = withSpring(ACTION_WIDTH, SNAP_SPRING);
+        } else {
+          translateX.value = withSpring(0, SNAP_SPRING);
+        }
       }
     });
 
